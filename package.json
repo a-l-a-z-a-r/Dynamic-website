@@ -1,0 +1,11 @@
+{
+  "name": "socialbook",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint:frontend": "prettier --check frontend/index.html frontend/styles.css"
+  },
+  "devDependencies": {
+    "prettier": "3.3.2"
+  }
+}
