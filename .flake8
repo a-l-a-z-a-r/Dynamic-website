@@ -1,0 +1,10 @@
+[flake8]
+max-line-length = 100
+extend-ignore =
+    E203  # allow slice spacing (black-compatible)
+    W503  # allow line break before binary operator
+exclude =
+    .git,
+    __pycache__,
+    venv,
+    .venv

@@ -14,3 +14,9 @@ docker compose up --build
 - API: http://localhost:5000/api/health
 
 Stop with `docker compose down`. Use `docker compose up -d` to run detached.
+
+## Lint checks
+
+- Backend: `cd backend && flake8`
+- Frontend: `npm install` (once) then `npm run lint:frontend`
+- All at once: `make lint`
