@@ -1,119 +1,175 @@
-const App = () => (
-  <>
-    <header className="topbar">
-      <div className="brand">
-        <span className="spark" />
-        <span className="wordmark">Socialbook</span>
-      </div>
-      <nav className="nav">
-        <a href="#feed">Feed</a>
-        <a href="#shelf">Shelf</a>
-        <a href="#recommendations">Recommended</a>
-        <a href="#reviews">Reviews</a>
-      </nav>
-      <button className="cta" type="button">
-        Start Reading
-      </button>
-    </header>
-    <main>
-      <section className="hero" id="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">For readers who socialize</p>
-          <h1>Track, share, and discover books together.</h1>
-          <p className="lede">
-            Live activity from friends, shelves that update automatically, and recommendations that learn what you
-            love.
-          </p>
-          <div className="actions">
-            <button className="primary" type="button">
-              Create account
-            </button>
-            <button className="ghost" type="button">
-              Browse community
-            </button>
-          </div>
-          <div className="quick-stats">
-            <div className="pill">
-              Currently reading <strong>3</strong>
-            </div>
-            <div className="pill">
-              Finished this month <strong>6</strong>
-            </div>
-            <div className="pill">
-              New recs today <strong>4</strong>
-            </div>
-          </div>
-        </div>
-        <div className="hero-panels">
-          <article className="panel shadow">
-            <header>
-              <div>
-                <p className="label">Personalized Activity Feed</p>
-                <h3>Friends finishing books in real time</h3>
-              </div>
-              <span className="badge success">Live</span>
-            </header>
-            <ul className="feed-list small">
-              <li>
-                <div className="avatar" aria-hidden="true">
-                  AG
-                </div>
-                <div>
-                  <p className="title">
-                    Amina finished <strong>Afterworld</strong>
-                  </p>
-                  <p className="meta">Rated 4.7 · Just now</p>
-                </div>
-              </li>
-              <li>
-                <div className="avatar" aria-hidden="true">
-                  DL
-                </div>
-                <div>
-                  <p className="title">
-                    Diego started <strong>The Poppy War</strong>
-                  </p>
-                  <p className="meta">Adds to Currently Reading</p>
-                </div>
-              </li>
-              <li>
-                <div className="avatar" aria-hidden="true">
-                  MS
-                </div>
-                <div>
-                  <p className="title">
-                    Mara reviewed <strong>Fourth Wing</strong>
-                  </p>
-                  <p className="meta">“Cliffhanger heaven.”</p>
-                </div>
-              </li>
-            </ul>
-          </article>
-          <article className="panel shadow">
-            <header>
-              <div>
-                <p className="label">Recommendations</p>
-                <h3>Shifts with every rating</h3>
-              </div>
-              <span className="badge">Adaptive</span>
-            </header>
-            <div className="recs-preview">
-              <div>
-                <p className="chip">Because you love novels</p>
-                <h4>Tomorrow, and Tomorrow, and Tomorrow</h4>
-                <p className="meta">Friend picks · 4.8 avg</p>
-              </div>
-              <div>
-                <p className="chip">Less Fantasy</p>
-                <h4>Station Eleven</h4>
-                <p className="meta">Grounded Sci-Fi · 4.7 avg</p>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
+import { useEffect, useMemo, useState } from 'react';
 
-      <section className="board" id="feed">
+const AUTH_API = import.meta.env.VITE_AUTH_API || 'http://localhost:4000';
+
+const App = () => {
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [user, setUser] = useState(null);
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sb_user');
+    if (stored) {
+      setUser(JSON.parse(stored));
+    }
+  }, []);
+
+  const heroTitle = useMemo(
+    () => (mode === 'login' ? 'Log in to your reading circle.' : 'Create an account and join the feed.'),
+    [mode],
+  );
+
+  const handleSubmit = async (evt) => {
+    evt.preventDefault();
+    setLoading(true);
+    setStatus('');
+    try {
+      const res = await fetch(`${AUTH_API}/auth/${mode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name: mode === 'register' ? name : undefined }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Unable to authenticate');
+      }
+
+      setUser(data.user);
+      localStorage.setItem('sb_user', JSON.stringify(data.user));
+      setStatus(mode === 'login' ? 'Welcome back!' : 'Account created — you are in.');
+      setPassword('');
+    } catch (err) {
+      setStatus(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('sb_user');
+    setStatus('Signed out.');
+  };
+
+  return (
+    <>
+      <header className="topbar">
+        <div className="brand">
+          <span className="spark" />
+          <span className="wordmark">Socialbook</span>
+        </div>
+        <nav className="nav">
+          <a href="#login">Login</a>
+          <a href="#feed">Feed</a>
+          <a href="#shelf">Shelf</a>
+          <a href="#recommendations">Recommended</a>
+          <a href="#reviews">Reviews</a>
+        </nav>
+        {user ? (
+          <button className="ghost" type="button" onClick={handleLogout}>
+            Sign out
+          </button>
+        ) : (
+          <button className="cta" type="button" onClick={() => setMode('register')}>
+            Join now
+          </button>
+        )}
+      </header>
+      <main>
+        <section className="auth-hero" id="login">
+          <div className="hero-copy">
+            <p className="eyebrow">Socialbook Login</p>
+            <h1>{heroTitle}</h1>
+            <p className="lede">
+              Your credentials are stored in MongoDB by the auth microservice. Log in to sync shelves, reviews, and
+              recommendations with your account.
+            </p>
+            <div className="quick-stats">
+              <div className="pill">Encrypted passwords</div>
+              <div className="pill">JWT issued per session</div>
+              <div className="pill">Backed by MongoDB</div>
+            </div>
+          </div>
+          <article className="panel auth-card">
+            <header className="panel-header">
+              <div>
+                <p className="label">Account</p>
+                <h3>{mode === 'login' ? 'Welcome back' : 'Create account'}</h3>
+              </div>
+              <div className="auth-toggle">
+                <button
+                  type="button"
+                  className={mode === 'login' ? 'tab active' : 'tab'}
+                  onClick={() => setMode('login')}
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  className={mode === 'register' ? 'tab active' : 'tab'}
+                  onClick={() => setMode('register')}
+                >
+                  Register
+                </button>
+              </div>
+            </header>
+            <form className="form vertical" onSubmit={handleSubmit}>
+              {mode === 'register' && (
+                <div className="field">
+                  <label htmlFor="name">Name</label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="Amina Gomez"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+              )}
+              <div className="field">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="reader@socialbook.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Minimum 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button className="primary" type="submit" disabled={loading}>
+                {loading ? 'Working...' : mode === 'login' ? 'Login' : 'Register'}
+              </button>
+              {status && <p className="meta status">{status}</p>}
+              {user && (
+                <p className="meta success">
+                  Signed in as <strong>{user.email}</strong>
+                </p>
+              )}
+            </form>
+          </article>
+        </section>
+
+        <section className="board" id="feed">
         <article className="panel">
           <header className="panel-header">
             <div>
