@@ -3,8 +3,8 @@ services:
     build: ./backend
     ports:
       - "5000:5000"
-    environment:
-      - MONGODB_URI=mongodb://mongo:27017/socialbook
+    env_file:
+      - ./backend/.env
     depends_on:
       - mongo
 
@@ -12,8 +12,9 @@ services:
     build: ./auth-service
     ports:
       - "4000:4000"
+    env_file:
+      - ./auth-service/.env
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/socialbook
       - JWT_SECRET=please-change-me
     depends_on:
       - mongo

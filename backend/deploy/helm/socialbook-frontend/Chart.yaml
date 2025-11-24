@@ -1,0 +1,6 @@
+apiVersion: v2
+name: socialbook-frontend
+description: Deploy the Socialbook frontend (Vite/React served by Nginx)
+version: 0.1.0
+appVersion: "1.0.0"
+type: application
