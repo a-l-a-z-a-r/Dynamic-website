@@ -1,0 +1,55 @@
+# Global settings
+domain: socialbook.example.com
+# Optional: set to your existing ClusterIssuer name (for cert-manager).
+clusterIssuer: ""
+email: admin@example.com
+
+# Backend chart overrides
+backend:
+  replicaCount: 1
+  image:
+    repository: "docker.io/alazar111/socialbook-backend"
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  # Required: provide the secret that contains backend environment values.
+  secretEnvs:
+    - name: MONGODB_URI
+      secretName: socialbook-env
+      secretKey: MONGODB_URI
+    - name: MONGODB_DB
+      secretName: socialbook-env
+      secretKey: MONGODB_DB
+  ingress:
+    enabled: true
+    className: nginx
+    annotations: {}
+    hosts:
+      - host: socialbook.example.com
+        paths:
+          - path: /api
+            pathType: Prefix
+    tls:
+      - hosts:
+          - socialbook.example.com
+        secretName: socialbook-backend-tls
+
+# Frontend chart overrides
+frontend:
+  replicaCount: 1
+  image:
+    repository: "docker.io/alazar111/socialbook-frontend"
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  ingress:
+    enabled: true
+    className: nginx
+    annotations: {}
+    hosts:
+      - host: socialbook.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - socialbook.example.com
+        secretName: socialbook-frontend-tls
