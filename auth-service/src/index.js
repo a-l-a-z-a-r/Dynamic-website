@@ -11,6 +11,11 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/socialbook';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
 
 mongoose
   .connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || 'socialbook' })
@@ -31,7 +36,8 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model('User', userSchema);
 
-app.use(cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 app.get('/health', (_req, res) => {

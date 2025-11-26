@@ -1,9 +1,0 @@
-dependencies:
-- name: socialbook-backend
-  repository: file://../socialbook-backend
-  version: 0.1.0
-- name: socialbook-frontend
-  repository: file://../socialbook-frontend
-  version: 0.1.0
-digest: sha256:810e0193c790db7608f00f99af1b99854b553d903306168db830a44cac60ac9e
-generated: "2025-11-24T21:24:56.886766219+01:00"

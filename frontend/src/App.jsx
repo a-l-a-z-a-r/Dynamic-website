@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const AUTH_API = import.meta.env.VITE_AUTH_API || 'http://localhost:4000';
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+const AUTH_API = import.meta.env.VITE_AUTH_API || 'http://localhost:30400';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:30500';
 
 const defaultShelf = {
   want_to_read: [],
