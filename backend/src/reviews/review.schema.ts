@@ -21,6 +21,9 @@ export class Review {
   @Prop({ default: 'review' })
   status?: string;
 
+  @Prop()
+  coverUrl?: string;
+
   // Added for typings; created automatically by timestamps
   created_at?: Date;
 }

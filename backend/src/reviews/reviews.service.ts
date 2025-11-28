@@ -10,6 +10,7 @@ export type ReviewPayload = {
   review?: string;
   genre?: string;
   status?: string;
+  coverUrl?: string;
 };
 
 @Injectable()
@@ -30,6 +31,7 @@ export class ReviewsService {
       review: payload.review,
       genre: payload.genre,
       status: payload.status ?? 'review',
+      coverUrl: payload.coverUrl,
     });
 
     return created.toObject();

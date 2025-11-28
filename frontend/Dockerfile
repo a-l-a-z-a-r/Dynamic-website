@@ -12,4 +12,5 @@ RUN npm run build
 FROM nginx:1.27-alpine
 
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx/ssl /etc/nginx/ssl
 COPY --from=builder /app/dist /usr/share/nginx/html

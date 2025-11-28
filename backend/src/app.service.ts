@@ -10,6 +10,7 @@ type FeedItem = {
   review?: string;
   status: string;
   created_at: string;
+  coverUrl?: string;
 };
 
 type Shelf = {
@@ -22,33 +23,6 @@ type Shelf = {
 @Injectable()
 export class AppService {
   constructor(private readonly reviewsService: ReviewsService) {}
-
-  private feedSeed: FeedItem[] = [
-    {
-      user: 'Luca',
-      action: 'rated',
-      book: 'Divine Rivals',
-      rating: 4.9,
-      review: 'My favorite enemies-to-lovers of the year.',
-      status: 'finished',
-      created_at: '2024-07-10T10:00:00Z',
-    },
-    {
-      user: 'Nia',
-      action: 'started',
-      book: 'Before the Coffee Gets Cold',
-      status: 'reading',
-      created_at: '2024-07-10T09:42:00Z',
-    },
-    {
-      user: 'Arjun',
-      action: 'reviewed',
-      book: 'Everything I Never Told You',
-      review: 'Quietly devastating and hopeful.',
-      status: 'review',
-      created_at: '2024-07-10T09:21:00Z',
-    },
-  ];
 
   private shelf: Shelf = {
     want_to_read: [
@@ -89,12 +63,7 @@ export class AppService {
   async getFeed() {
     const reviews = await this.reviewsService.findAll();
     const reviewFeed = reviews.map((review) => this.toFeedItem(review));
-
-    const merged = [...reviewFeed, ...this.feedSeed].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-
-    return { feed: merged };
+    return { feed: reviewFeed };
   }
 
   getShelf() {
@@ -163,6 +132,7 @@ export class AppService {
       review: review.review,
       status: review.status ?? 'review',
       created_at: this.formatCreatedAt(review.created_at),
+      coverUrl: review.coverUrl,
     };
   }
 
@@ -175,6 +145,7 @@ export class AppService {
       review: review.review,
       genre: review.genre,
       created_at: this.formatCreatedAt(review.created_at),
+      coverUrl: (review as any).coverUrl,
     };
   }
 
