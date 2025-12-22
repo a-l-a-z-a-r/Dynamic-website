@@ -2,7 +2,7 @@
 
 app:
   name: socialbook-gitops-dev
-  replicas: 3
+  replicas: 
 
 # Development domain - change to your assigned domain
 domain: socialbook-dev.ltu-m7011e-11.se
