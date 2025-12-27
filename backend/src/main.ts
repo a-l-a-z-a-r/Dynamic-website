@@ -5,7 +5,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: ['http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://46.62.130.16:30090'],
+    origin: [
+      'http://localhost:8080',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://46.62.130.16:30090',
+      'https://socialbook.46-62-130-16.nip.io',
+    ],
   });
 
   const port = process.env.PORT || 5000;
