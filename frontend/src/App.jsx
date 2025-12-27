@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
-import keycloak from './keycloak';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 const apiUrl = (path) => {
   const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
   return `${base}${path}`;
 };
-
-const AUTH_DISABLED = false;
 
 const keyFor = (item) => `${item.user ?? 'anon'}-${item.book ?? 'untitled'}-${item.created_at ?? ''}`;
 const keepWithCover = (items = []) =>
@@ -22,83 +19,15 @@ const initials = (name = '') =>
     .toUpperCase();
 
 const App = () => {
-  const [keycloakReady, setKeycloakReady] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [dataLoading, setDataLoading] = useState(false);
-
+  const user = { email: 'guest@socialbook', name: 'Guest' };
   const [feed, setFeed] = useState([]);
 
   useEffect(() => {
-    if (AUTH_DISABLED) {
-      setAuthenticated(true);
-      setUser({ email: 'guest@socialbook', name: 'Guest' });
-      setKeycloakReady(true);
-      return;
-    }
-
-    const init = async () => {
-      try {
-        const pkceMethod = window?.isSecureContext && window?.crypto?.subtle ? 'S256' : false;
-        const authenticatedSession = await keycloak.init({
-          onLoad: 'login-required',
-          checkLoginIframe: false,
-          pkceMethod,
-        });
-        setAuthenticated(authenticatedSession);
-        if (authenticatedSession) {
-          setToken(keycloak.token);
-          const profile = await keycloak.loadUserProfile();
-          setUser({
-            email: profile.email || keycloak.tokenParsed?.preferred_username,
-            name: `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() || profile.username,
-          });
-          keycloak.onTokenExpired = () => {
-            keycloak
-              .updateToken(30)
-              .then((refreshed) => {
-                if (refreshed) {
-                  setToken(keycloak.token);
-                }
-              })
-              .catch(() => keycloak.logout({ redirectUri: window.location.origin }));
-          };
-        }
-      } catch (err) {
-        console.error('Keycloak init failed', err);
-      } finally {
-        setKeycloakReady(true);
-      }
-    };
-
-    init();
-  }, []);
-
-  useEffect(() => {
-    if (AUTH_DISABLED) return;
-    if (!authenticated) return;
-    const interval = setInterval(() => {
-      keycloak
-        .updateToken(30)
-        .then((refreshed) => {
-          if (refreshed) {
-            setToken(keycloak.token);
-          }
-        })
-        .catch(() => keycloak.logout({ redirectUri: window.location.origin }));
-    }, 20000);
-
-    return () => clearInterval(interval);
-  }, [authenticated]);
-
-  useEffect(() => {
-    if (!token && !AUTH_DISABLED) return;
     const load = async () => {
       setDataLoading(true);
       try {
-        const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-        const feedRes = await fetch(apiUrl('/feed'), { headers: authHeaders }).then((r) => r.json());
+        const feedRes = await fetch(apiUrl('/feed')).then((r) => r.json());
         const feedData = keepWithCover(feedRes?.feed ?? []);
         setFeed(feedData);
       } catch (err) {
@@ -109,35 +38,11 @@ const App = () => {
     };
 
     load();
-  }, [token]);
+  }, []);
 
   const handleImageError = (badKey) => {
     setFeed((prev) => prev.filter((item) => keyFor(item) !== badKey));
   };
-
-  const handleLogout = () => {
-    setUser(null);
-    setFeed([]);
-    if (!AUTH_DISABLED) {
-      keycloak.logout({ redirectUri: window.location.origin });
-    }
-  };
-
-  if (!keycloakReady && !AUTH_DISABLED) {
-    return (
-      <main className="auth-shell">
-        <p className="meta">Connecting to Sign-In...</p>
-      </main>
-    );
-  }
-
-  if ((!authenticated || !user) && !AUTH_DISABLED) {
-    return (
-      <main className="auth-shell">
-        <p className="meta">Redirecting to Keycloak...</p>
-      </main>
-    );
-  }
 
   return (
     <>
@@ -147,12 +52,9 @@ const App = () => {
           <span className="wordmark">Socialbook</span>
         </div>
         <div className="nav">
-          <span className="badge success">Signed in</span>
+          <span className="badge success">Guest</span>
           <span className="meta">{user?.email}</span>
         </div>
-        <button className="ghost" type="button" onClick={handleLogout}>
-          Sign out
-        </button>
       </header>
 
       <main>

@@ -42,7 +42,6 @@
 ```
 [Simple diagram showing main components]
 Frontend <-> API <-> Services <-> Database
-                 <-> Auth Service
                  <-> [Other Services]
 ```
 
