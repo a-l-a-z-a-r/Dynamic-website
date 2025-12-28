@@ -19,31 +19,6 @@ const keepWithCover = (items = []) =>
     .map((item) => ({ ...item, coverUrl: normalizeCoverUrl(item?.coverUrl) }))
     .filter((item) => item.coverUrl);
 
-const probeImage = (url, timeoutMs = 5000) =>
-  new Promise((resolve) => {
-    const img = new Image();
-    let done = false;
-    const finish = (ok) => {
-      if (done) return;
-      done = true;
-      img.onload = null;
-      img.onerror = null;
-      clearTimeout(timer);
-      resolve(ok);
-    };
-    const timer = setTimeout(() => finish(false), timeoutMs);
-    img.onload = () => finish(true);
-    img.onerror = () => finish(false);
-    img.src = url;
-  });
-
-const filterLiveCovers = async (items = []) => {
-  const checks = await Promise.all(
-    items.map(async (item) => ((await probeImage(item.coverUrl)) ? item : null)),
-  );
-  return checks.filter(Boolean);
-};
-
 const initials = (name = '') =>
   name
     .split(' ')
@@ -63,8 +38,7 @@ const App = () => {
       try {
         const feedRes = await fetch(apiUrl('/feed')).then((r) => r.json());
         const feedData = keepWithCover(feedRes?.feed ?? []);
-        const liveOnly = await filterLiveCovers(feedData);
-        setFeed(liveOnly);
+        setFeed(feedData);
       } catch (err) {
         console.error('Failed to load data', err);
       } finally {

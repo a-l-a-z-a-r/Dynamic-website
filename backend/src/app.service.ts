@@ -24,7 +24,6 @@ type Shelf = {
 export class AppService {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  private readonly coverMinBytes = this.readNumberEnv(process.env.COVER_MIN_BYTES, 2048);
   private readonly coverTimeoutMs = this.readNumberEnv(process.env.COVER_TIMEOUT_MS, 5000);
   private readonly coverBatchSize = this.readNumberEnv(process.env.COVER_CHECK_BATCH, 5);
 
@@ -213,12 +212,9 @@ export class AppService {
 
     try {
       const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
-      if (!res.ok) return false;
-      const lengthHeader = res.headers.get('content-length');
-      if (!lengthHeader) return null;
-      const length = Number(lengthHeader);
-      if (!Number.isFinite(length)) return null;
-      return length >= this.coverMinBytes;
+      if (res.status === 200) return true;
+      if (res.status === 405 || res.status === 501) return null;
+      return false;
     } catch {
       return null;
     } finally {
@@ -233,12 +229,9 @@ export class AppService {
     try {
       const res = await fetch(url, {
         method: 'GET',
-        headers: { Range: `bytes=0-${this.coverMinBytes - 1}` },
         signal: controller.signal,
       });
-      if (!res.ok) return false;
-      const buffer = await res.arrayBuffer();
-      return buffer.byteLength >= this.coverMinBytes;
+      return res.status === 200;
     } catch {
       return false;
     } finally {
