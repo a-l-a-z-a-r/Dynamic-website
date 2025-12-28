@@ -18,7 +18,7 @@ export class ReviewsService {
   constructor(@InjectModel(Review.name) private reviewModel: Model<ReviewDocument>) {}
 
   async findAll(): Promise<Review[]> {
-    return this.reviewModel.find().sort({ created_at: -1 }).lean().exec();
+    return this.reviewModel.find().lean().exec();
   }
 
   async deleteByCoverUrl(coverUrl: string) {
