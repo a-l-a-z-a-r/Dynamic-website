@@ -255,7 +255,10 @@ export class AppService {
   }
 
   private isImageContentType(value: string) {
-    return value.toLowerCase().startsWith('image/');
+    const normalized = value.toLowerCase();
+    if (!normalized.startsWith('image/')) return false;
+    if (normalized.includes('image/gif')) return false;
+    return true;
   }
 
   private isMinBytes(buffer: ArrayBuffer, lengthHeader: string | null) {
