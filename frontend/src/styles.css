@@ -1,16 +1,16 @@
 :root {
-  --bg: #fff2d8;
-  --bg-alt: #ffe6ff;
-  --panel: rgba(255, 255, 255, 0.78);
-  --text: #1a0f24;
-  --muted: #3e2b54;
+  --bg: #0b0b10;
+  --bg-alt: #14121c;
+  --panel: rgba(12, 12, 18, 0.82);
+  --text: #f5f0ff;
+  --muted: #c1b4d6;
   --accent: #ff006e;
   --accent-2: #3a86ff;
   --accent-3: #ffbe0b;
   --accent-4: #06d6a0;
   --accent-5: #fb5607;
-  --border: rgba(26, 15, 36, 0.2);
-  --shadow: 0 28px 52px rgba(28, 8, 48, 0.22);
+  --border: rgba(196, 170, 232, 0.18);
+  --shadow: 0 28px 52px rgba(9, 5, 18, 0.6);
   --radius: 16px;
   --font: 'DM Sans', 'Segoe UI', 'Trebuchet MS', sans-serif;
 }
