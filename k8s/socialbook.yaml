@@ -98,13 +98,14 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: alazar111/socialbook-frontend:frontend-d22cc65
+          image: alazar111/socialbook-frontend:frontend-af19f44
+
           imagePullPolicy: Always
           ports:
             - containerPort: 80
           env:
             - name: VITE_API_BASE
-              value: http://api.socialbook.46-62-130-16.nip.io
+              value: /api
 ---
 apiVersion: v1
 kind: Service
