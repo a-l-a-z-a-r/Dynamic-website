@@ -11,6 +11,7 @@ const minDimension = Number(process.env.COVER_MIN_DIMENSION || DEFAULT_MIN_DIMEN
 const probeBytes = Number(process.env.COVER_PROBE_BYTES || DEFAULT_PROBE_BYTES);
 const timeoutMs = Number(process.env.COVER_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
 const concurrency = Number(process.env.COVER_AUDIT_CONCURRENCY || DEFAULT_CONCURRENCY);
+const shouldDelete = process.env.COVER_AUDIT_DELETE === 'true';
 
 const reviewSchema = new mongoose.Schema(
   {
@@ -199,8 +200,12 @@ const run = async () => {
   }
 
   const ids = invalid.map((item) => item.review._id);
-  await Review.deleteMany({ _id: { $in: ids } }).exec();
-  console.log(`Deleted ${ids.length} reviews with invalid covers.`);
+  if (shouldDelete) {
+    await Review.deleteMany({ _id: { $in: ids } }).exec();
+    console.log(`Deleted ${ids.length} reviews with invalid covers.`);
+  } else {
+    console.log(`Found ${ids.length} reviews with invalid covers (no deletion).`);
+  }
 
   invalid.slice(0, 10).forEach((item) => {
     console.log(`- ${item.review.book || 'Untitled'} | ${item.review.coverUrl} | ${item.check.reason}`);
