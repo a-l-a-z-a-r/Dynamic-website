@@ -110,7 +110,9 @@ const App = () => {
   }, []);
 
   const handleImageError = (badKey) => {
-    setFeed((prev) => prev.filter((item) => keyFor(item) !== badKey));
+    setFeed((prev) =>
+      prev.map((item) => (keyFor(item) === badKey ? { ...item, coverUrl: null } : item)),
+    );
   };
 
   return (
