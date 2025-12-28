@@ -11,6 +11,9 @@ const apiUrl = (path) => {
 const DASHBOARD_PATH = '/dashboard';
 const keyFor = (item) =>
   item.id || item._id || `${item.user ?? 'anon'}-${item.book ?? 'untitled'}-${item.created_at ?? ''}`;
+const AUTH_DISABLED = false;
+const MIN_COVER_BYTES = 2048;
+const COVER_TIMEOUT_MS = 5000;
 
 const authFetch = async (path, token, options = {}) => {
   if (!token) {
@@ -31,6 +34,54 @@ const authFetch = async (path, token, options = {}) => {
   }
 
   return response.json();
+};
+
+const getPathname = (value) => {
+  try {
+    return new URL(value).pathname.toLowerCase();
+  } catch {
+    return value.split('?')[0].toLowerCase();
+  }
+};
+
+const isJpegUrl = (value) => {
+  const path = getPathname(value);
+  return path.endsWith('.jpg') || path.endsWith('.jpeg');
+};
+
+const isGifUrl = (value) => getPathname(value).endsWith('.gif');
+
+const probeCover = async (url) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), COVER_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Range: `bytes=0-${MIN_COVER_BYTES - 1}` },
+      signal: controller.signal,
+    });
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('image/gif')) return false;
+    if (!contentType.includes('image/jpeg')) return false;
+    const lengthHeader = res.headers.get('content-length');
+    if (lengthHeader) {
+      const length = Number(lengthHeader);
+      return Number.isFinite(length) && length >= MIN_COVER_BYTES;
+    }
+    const buffer = await res.arrayBuffer();
+    return buffer.byteLength >= MIN_COVER_BYTES;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const filterValidCovers = async (items = []) => {
+  const checks = await Promise.all(
+    items.map(async (item) => ((await probeCover(item.coverUrl)) ? item : null)),
+  );
+  return checks.filter(Boolean);
 };
 
 const initials = (name = '') =>
