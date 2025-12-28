@@ -24,6 +24,10 @@ type Shelf = {
 export class AppService {
   constructor(private readonly reviewsService: ReviewsService) {}
 
+  private readonly coverMinBytes = this.readNumberEnv(process.env.COVER_MIN_BYTES, 2048);
+  private readonly coverTimeoutMs = this.readNumberEnv(process.env.COVER_TIMEOUT_MS, 5000);
+  private readonly coverBatchSize = this.readNumberEnv(process.env.COVER_CHECK_BATCH, 5);
+
   private shelf: Shelf = {
     want_to_read: [
       'The Heaven & Earth Grocery Store',
@@ -63,7 +67,8 @@ export class AppService {
   async getFeed() {
     const reviews = await this.reviewsService.findAll();
     const reviewFeed = reviews.map((review) => this.toFeedItem(review));
-    return { feed: reviewFeed };
+    const filtered = await this.filterFeedByCover(reviewFeed);
+    return { feed: filtered };
   }
 
   getShelf() {
@@ -153,5 +158,91 @@ export class AppService {
     if (typeof value === 'string') return value;
     if (value instanceof Date) return value.toISOString();
     return new Date().toISOString();
+  }
+
+  private readNumberEnv(value: string | undefined, fallback: number) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  }
+
+  private async filterFeedByCover(items: FeedItem[]) {
+    const kept: FeedItem[] = [];
+
+    for (let i = 0; i < items.length; i += this.coverBatchSize) {
+      const batch = items.slice(i, i + this.coverBatchSize);
+      const results = await Promise.all(
+        batch.map(async (item) => {
+          if (!item.coverUrl) return null;
+          const ok = await this.isCoverAlive(item.coverUrl);
+          return ok ? item : null;
+        }),
+      );
+      kept.push(...results.filter((item): item is FeedItem => Boolean(item)));
+    }
+
+    return kept;
+  }
+
+  private async isCoverAlive(url: string) {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return false;
+    }
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+
+    if (typeof fetch !== 'function') {
+      return true;
+    }
+
+    const headOk = await this.checkCoverHead(url);
+    if (headOk !== null) {
+      return headOk;
+    }
+
+    return this.checkCoverGet(url);
+  }
+
+  private async checkCoverHead(url: string) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.coverTimeoutMs);
+
+    try {
+      const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
+      if (!res.ok) return false;
+      const lengthHeader = res.headers.get('content-length');
+      if (!lengthHeader) return null;
+      const length = Number(lengthHeader);
+      if (!Number.isFinite(length)) return null;
+      return length >= this.coverMinBytes;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async checkCoverGet(url: string) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.coverTimeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Range: `bytes=0-${this.coverMinBytes - 1}` },
+        signal: controller.signal,
+      });
+      if (!res.ok) return false;
+      const buffer = await res.arrayBuffer();
+      return buffer.byteLength >= this.coverMinBytes;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 }
