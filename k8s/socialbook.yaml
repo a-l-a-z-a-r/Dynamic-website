@@ -73,8 +73,6 @@ spec:
               value: https://keycloak.ltu-m7011e-11.se
             - name: KEYCLOAK_REALM
               value: Userenter
-            - name: KEYCLOAK_AUDIENCE
-              value: socialbook
             - name: BACKEND_IMAGE_TAG
               value: latest
 ---
