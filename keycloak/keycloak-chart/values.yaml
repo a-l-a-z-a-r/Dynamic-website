@@ -25,7 +25,7 @@ keycloak:
     host: postgres-service  # Same namespace - simplified
     port: 5432
     database: keycloak
-    username: keycloak
+    username: keycloakq
     password: keycloak-secure-password-123  # Must match PostgreSQL password
 
   # Resource limits (optional)

@@ -4,10 +4,11 @@ import { DatabaseModule } from './database/database.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { KeycloakAdminService } from './auth/keycloak-admin.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, ReviewsModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, KeycloakAdminService],
 })
 export class AppModule {}

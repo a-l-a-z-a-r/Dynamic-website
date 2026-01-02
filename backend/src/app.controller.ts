@@ -2,10 +2,22 @@ import { Body, Controller, Get, HttpException, HttpStatus, Post, UseGuards } fro
 import { AppService } from './app.service';
 import { ReviewPayload } from './reviews/reviews.service';
 import { KeycloakAuthGuard } from './auth/keycloak.guard';
+import { KeycloakAdminService } from './auth/keycloak-admin.service';
+
+type SignupPayload = {
+  username: string;
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+};
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly keycloakAdminService: KeycloakAdminService,
+  ) {}
 
   @UseGuards(KeycloakAuthGuard)
   @Get('feed')
@@ -39,6 +51,23 @@ export class AppController {
     }
 
     return this.appService.addReview(body);
+  }
+
+  @Post('signup')
+  async signup(@Body() body: SignupPayload) {
+    const { username, email, password } = body || {};
+    if (!username || !email || !password) {
+      throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      await this.keycloakAdminService.createUser(body);
+      return { ok: true };
+    } catch (err) {
+      const status = (err as any)?.status || HttpStatus.BAD_GATEWAY;
+      const message = (err as Error)?.message || 'Failed to create user';
+      throw new HttpException({ error: message }, status);
+    }
   }
 
   @Get('health')
