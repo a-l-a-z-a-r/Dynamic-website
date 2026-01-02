@@ -40,4 +40,4 @@ keycloak:
 # Ingress configuration
 domain: keycloak.ltu-m7011e-11.se  # Change to your domain
 email: alabel-1@student.ltu.se              # Change to your email
-certIssuer: letsencrypt-staging       # Use letsencrypt-prod for production
+certIssuer: letsencrypt-prod       # Use letsencrypt-prod for production
