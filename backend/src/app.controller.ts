@@ -3,8 +3,14 @@ import { AppService } from './app.service';
 import { ReviewPayload } from './reviews/reviews.service';
 import { KeycloakAuthGuard } from './auth/keycloak.guard';
 import { KeycloakAdminService } from './auth/keycloak-admin.service';
+import { KeycloakAuthService } from './auth/keycloak-auth.service';
 
 type SignupPayload = {
+  username: string;
+  password: string;
+};
+
+type LoginPayload = {
   username: string;
   password: string;
 };
@@ -14,6 +20,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly keycloakAdminService: KeycloakAdminService,
+    private readonly keycloakAuthService: KeycloakAuthService,
   ) {}
 
   @UseGuards(KeycloakAuthGuard)
@@ -63,6 +70,23 @@ export class AppController {
     } catch (err) {
       const status = (err as any)?.status || HttpStatus.BAD_GATEWAY;
       const message = (err as Error)?.message || 'Failed to create user';
+      throw new HttpException({ error: message }, status);
+    }
+  }
+
+  @Post('login')
+  async login(@Body() body: LoginPayload) {
+    const { username, password } = body || {};
+    if (!username || !password) {
+      throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const token = await this.keycloakAuthService.loginWithPassword(username, password);
+      return token;
+    } catch (err) {
+      const status = (err as any)?.status || HttpStatus.BAD_GATEWAY;
+      const message = (err as Error)?.message || 'Login failed';
       throw new HttpException({ error: message }, status);
     }
   }
