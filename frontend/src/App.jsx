@@ -44,6 +44,14 @@ const App = () => {
   const [profile, setProfile] = useState(null);
   const [authError, setAuthError] = useState('');
   const [feed, setFeed] = useState([]);
+  const [signupState, setSignupState] = useState({ loading: false, error: '', success: false });
+  const [signupForm, setSignupForm] = useState({
+    username: '',
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -195,6 +203,30 @@ const App = () => {
     getKeycloak().logout();
   };
 
+  const handleSignupChange = (event) => {
+    const { name, value } = event.target;
+    setSignupForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSignupSubmit = async (event) => {
+    event.preventDefault();
+    setSignupState({ loading: true, error: '', success: false });
+    try {
+      const response = await fetch(apiUrl('/signup'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(signupForm),
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Signup failed: ${response.status}`);
+      }
+      setSignupState({ loading: false, error: '', success: true });
+    } catch (err) {
+      setSignupState({ loading: false, error: err.message || 'Signup failed.', success: false });
+    }
+  };
+
   const handleImageError = (badKey) => {
     setFeed((prev) =>
       prev.map((item) => (keyFor(item) === badKey ? { ...item, coverUrl: null } : item)),
@@ -256,6 +288,70 @@ const App = () => {
                   </button>
                 )}
               </div>
+            </div>
+            <div className="panel shadow">
+              <p className="label">Create account</p>
+              <h3>Join Socialbook</h3>
+              <p className="meta">Create a local account stored in Keycloak.</p>
+              <form className="form vertical" onSubmit={handleSignupSubmit}>
+                <label className="field">
+                  <span className="meta">Username</span>
+                  <input
+                    name="username"
+                    value={signupForm.username}
+                    onChange={handleSignupChange}
+                    autoComplete="username"
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span className="meta">Email</span>
+                  <input
+                    name="email"
+                    type="email"
+                    value={signupForm.email}
+                    onChange={handleSignupChange}
+                    autoComplete="email"
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span className="meta">Password</span>
+                  <input
+                    name="password"
+                    type="password"
+                    value={signupForm.password}
+                    onChange={handleSignupChange}
+                    autoComplete="new-password"
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span className="meta">First name</span>
+                  <input
+                    name="firstName"
+                    value={signupForm.firstName}
+                    onChange={handleSignupChange}
+                    autoComplete="given-name"
+                  />
+                </label>
+                <label className="field">
+                  <span className="meta">Last name</span>
+                  <input
+                    name="lastName"
+                    value={signupForm.lastName}
+                    onChange={handleSignupChange}
+                    autoComplete="family-name"
+                  />
+                </label>
+                {signupState.error && <p className="empty-state">{signupState.error}</p>}
+                {signupState.success && (
+                  <p className="empty-state">Account created. Use GitHub login to continue.</p>
+                )}
+                <button className="primary" type="submit" disabled={signupState.loading}>
+                  {signupState.loading ? 'Creating...' : 'Create account'}
+                </button>
+              </form>
             </div>
           </section>
         </main>
