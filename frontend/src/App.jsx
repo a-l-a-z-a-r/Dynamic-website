@@ -44,6 +44,9 @@ const App = () => {
   const [profile, setProfile] = useState(null);
   const [authError, setAuthError] = useState('');
   const [feed, setFeed] = useState([]);
+  const [localToken, setLocalToken] = useState('');
+  const [loginState, setLoginState] = useState({ loading: false, error: '' });
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [signupState, setSignupState] = useState({ loading: false, error: '', success: false });
   const [signupForm, setSignupForm] = useState({
     username: '',
@@ -155,7 +158,7 @@ const App = () => {
             setAuthError('Unable to load user profile.');
           });
 
-        loadFeed();
+        loadFeed(keycloak.token);
       })
       .catch((err) => {
         console.error('Keycloak initialization error:', err);
@@ -175,11 +178,17 @@ const App = () => {
     return () => clearInterval(refreshInterval);
   }, []);
 
-  const loadFeed = async () => {
+  const loadFeed = async (tokenOverride) => {
     try {
       const keycloak = getKeycloak();
-      await keycloak.updateToken(70);
-      const feedRes = await authFetch('/feed', keycloak.token);
+      const token = tokenOverride || localToken || keycloak.token;
+      if (!token) {
+        throw new Error('Missing access token');
+      }
+      if (keycloak.authenticated && !tokenOverride) {
+        await keycloak.updateToken(70);
+      }
+      const feedRes = await authFetch('/feed', token);
       setFeed(feedRes?.feed ?? []);
       setAuthError('');
     } catch (err) {
@@ -203,6 +212,41 @@ const App = () => {
 
   const handleLogout = () => {
     getKeycloak().logout();
+    setLocalToken('');
+    setProfile(null);
+    setAuthState({ loading: false, authenticated: false });
+  };
+
+  const handleLoginChange = (event) => {
+    const { name, value } = event.target;
+    setLoginForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordLogin = async (event) => {
+    event.preventDefault();
+    setLoginState({ loading: true, error: '' });
+    try {
+      const response = await fetch(apiUrl('/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginForm),
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Login failed: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data?.access_token) {
+        throw new Error('Missing access token');
+      }
+      setLocalToken(data.access_token);
+      setProfile({ username: loginForm.username });
+      setAuthState({ loading: false, authenticated: true });
+      setLoginState({ loading: false, error: '' });
+      loadFeed(data.access_token);
+    } catch (err) {
+      setLoginState({ loading: false, error: err.message || 'Login failed.' });
+    }
   };
 
   const handleSignupChange = (event) => {
@@ -290,11 +334,43 @@ const App = () => {
                       Continue with GitHub
                     </button>
                     <button className="ghost" type="button" onClick={handleKeycloakLogin}>
-                      Sign in with username & password
+                      Use Keycloak login
                     </button>
                   </>
                 )}
               </div>
+            </div>
+            <div className="panel shadow">
+              <p className="label">Sign in</p>
+              <h3>Username & password</h3>
+              <p className="meta">Authenticate directly without leaving this page.</p>
+              <form className="form vertical" onSubmit={handlePasswordLogin}>
+                <label className="field">
+                  <span className="meta">Username</span>
+                  <input
+                    name="username"
+                    value={loginForm.username}
+                    onChange={handleLoginChange}
+                    autoComplete="username"
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span className="meta">Password</span>
+                  <input
+                    name="password"
+                    type="password"
+                    value={loginForm.password}
+                    onChange={handleLoginChange}
+                    autoComplete="current-password"
+                    required
+                  />
+                </label>
+                {loginState.error && <p className="empty-state">{loginState.error}</p>}
+                <button className="primary" type="submit" disabled={loginState.loading}>
+                  {loginState.loading ? 'Signing in...' : 'Sign in'}
+                </button>
+              </form>
             </div>
             <div className="panel shadow">
               <p className="label">Create account</p>
