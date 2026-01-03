@@ -408,19 +408,14 @@ const App = () => {
             <section className="auth-hero">
               <div className="hero-copy">
                 <p className="label">Sign in required</p>
-                <h1>Welcome back to Socialbook</h1>
-                <p className="lede">
-                  Log in with your Keycloak account to see your personalized reading feed.
-                </p>
+              <h1>Welcome back to Socialbook</h1>
+              <p className="lede">Log in to see your personalized reading feed.</p>
                 {authError && <p className="empty-state">{authError}</p>}
                 <div className="actions">
                   {hasConfig && (
                     <>
                       <button className="cta" type="button" onClick={handleLogin}>
                         Continue with GitHub
-                      </button>
-                      <button className="ghost" type="button" onClick={handleKeycloakLogin}>
-                        Use Keycloak login
                       </button>
                       <button className="primary" type="button" onClick={() => setAuthView('signup')}>
                         Create account
@@ -432,7 +427,7 @@ const App = () => {
               <div className="panel shadow">
                 <p className="label">Sign in</p>
                 <h3>Username & password</h3>
-                <p className="meta">Authenticate directly without leaving this page.</p>
+                <p className="meta">Sign in with your username and password.</p>
                 <form className="form vertical" onSubmit={handlePasswordLogin}>
                   <label className="field">
                     <span className="meta">Username</span>
