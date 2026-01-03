@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ReviewPayload } from './reviews/reviews.service';
 import { KeycloakAuthGuard } from './auth/keycloak.guard';
@@ -8,6 +8,9 @@ import { KeycloakAuthService } from './auth/keycloak-auth.service';
 type SignupPayload = {
   username: string;
   password: string;
+  firstName?: string;
+  lastName?: string;
+  age?: number | string;
 };
 
 type LoginPayload = {
@@ -59,8 +62,8 @@ export class AppController {
 
   @Post('signup')
   async signup(@Body() body: SignupPayload) {
-    const { username, password } = body || {};
-    if (!username || !password) {
+    const { username, password, firstName, lastName, age } = body || {};
+    if (!username || !password || !firstName || !lastName || !age) {
       throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
     }
 
@@ -70,6 +73,35 @@ export class AppController {
     } catch (err) {
       const status = (err as any)?.status || HttpStatus.BAD_GATEWAY;
       const message = (err as Error)?.message || 'Failed to create user';
+      throw new HttpException({ error: message }, status);
+    }
+  }
+
+  @Get('profile/:username')
+  async profile(@Param('username') username: string) {
+    if (!username) {
+      throw new HttpException({ error: 'Missing username' }, HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const user = await this.keycloakAdminService.findUserByUsername(username);
+      if (!user) {
+        throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND);
+      }
+
+      return {
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        attributes: user.attributes || {},
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      const status = (err as any)?.status || HttpStatus.BAD_GATEWAY;
+      const message = (err as Error)?.message || 'Failed to load profile';
       throw new HttpException({ error: message }, status);
     }
   }
