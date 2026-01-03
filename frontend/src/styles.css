@@ -169,9 +169,9 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
 .form.vertical { grid-template-columns: 1fr; }
 .field { display: grid; gap: 6px; }
 label { color: #1a0f24; font-weight: 600; }
-input, textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.85); color: #1a0f24; font-size: 0.95rem; font-family: inherit; }
+input, textarea, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.85); color: #1a0f24; font-size: 0.95rem; font-family: inherit; }
 textarea { resize: vertical; }
-input:focus, textarea:focus { outline: 2px solid rgba(255, 0, 110, 0.7); box-shadow: 0 0 0 4px rgba(58, 134, 255, 0.25); }
+input:focus, textarea:focus, select:focus { outline: 2px solid rgba(255, 0, 110, 0.7); box-shadow: 0 0 0 4px rgba(58, 134, 255, 0.25); }
 .status { color: #f59e0b; }
 .success { color: #34d399; }
 

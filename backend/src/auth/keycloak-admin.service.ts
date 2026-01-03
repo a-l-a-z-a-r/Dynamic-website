@@ -5,6 +5,9 @@ import type { IncomingHttpHeaders } from 'http';
 type SignupPayload = {
   username: string;
   password: string;
+  firstName?: string;
+  lastName?: string;
+  age?: number | string;
 };
 
 type KeycloakConfig = {
@@ -45,8 +48,11 @@ export class KeycloakAdminService {
 
     const body = JSON.stringify({
       username: payload.username,
+      firstName: payload.firstName || undefined,
+      lastName: payload.lastName || undefined,
       enabled: true,
       emailVerified: false,
+      attributes: payload.age ? { age: [String(payload.age)] } : undefined,
       credentials: [
         {
           type: 'password',
@@ -67,6 +73,32 @@ export class KeycloakAdminService {
       (error as any).status = result.status;
       throw error;
     }
+  }
+
+  async findUserByUsername(username: string) {
+    this.loadConfig();
+    const token = await this.fetchAdminToken();
+    const { url, realm } = this.config!;
+    const endpoint = new URL(`${url}/admin/realms/${realm}/users`);
+    endpoint.searchParams.set('username', username);
+    endpoint.searchParams.set('exact', 'true');
+
+    const result = await this.request('GET', endpoint, {
+      Authorization: `Bearer ${token}`,
+    });
+
+    if (result.status < 200 || result.status >= 300) {
+      const detail = result.body || 'Failed to load user';
+      const error = new Error(detail);
+      (error as any).status = result.status;
+      throw error;
+    }
+
+    const users = JSON.parse(result.body || '[]');
+    if (!Array.isArray(users) || users.length === 0) {
+      return null;
+    }
+    return users[0];
   }
 
   private async fetchAdminToken() {

@@ -10,13 +10,15 @@ const apiUrl = (path) => {
 
 const keyFor = (item) => `${item.user ?? 'anon'}-${item.book ?? 'untitled'}-${item.created_at ?? ''}`;
 
-const authFetch = async (path, token) => {
+const authFetch = async (path, token, options = {}) => {
   if (!token) {
     throw new Error('Missing access token');
   }
 
   const response = await fetch(apiUrl(path), {
+    ...options,
     headers: {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`,
     },
   });
@@ -45,6 +47,7 @@ const App = () => {
   const [authError, setAuthError] = useState('');
   const [feed, setFeed] = useState([]);
   const [authView, setAuthView] = useState('signin');
+  const [path, setPath] = useState(window.location.pathname);
   const [localToken, setLocalToken] = useState('');
   const [loginState, setLoginState] = useState({ loading: false, error: '' });
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
@@ -55,6 +58,13 @@ const App = () => {
     firstName: '',
     lastName: '',
     age: '',
+  });
+  const [profileState, setProfileState] = useState({ loading: false, error: '', data: null });
+  const [booklists, setBooklists] = useState([]);
+  const [booklistForm, setBooklistForm] = useState({
+    name: '',
+    description: '',
+    visibility: 'public',
   });
 
   useEffect(() => {
@@ -129,6 +139,22 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    const handlePop = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, []);
+
+  const navigate = (nextPath) => {
+    if (nextPath === path) return;
+    window.history.pushState({}, '', nextPath);
+    setPath(nextPath);
+  };
+
+  const getActiveToken = () => localToken || getKeycloak().token;
+  const profileMatch = path.match(/^\\/profile\\/([^/]+)$/);
+  const profileUsername = profileMatch ? decodeURIComponent(profileMatch[1]) : '';
+
+  useEffect(() => {
     if (!hasKeycloakConfig()) {
       setAuthError(
         'Missing Keycloak configuration. Set VITE_KEYCLOAK_URL, VITE_KEYCLOAK_REALM, and VITE_KEYCLOAK_CLIENT_ID.',
@@ -157,6 +183,10 @@ const App = () => {
           .loadUserProfile()
           .then((profileData) => {
             setProfile(profileData);
+            const username = profileData?.username || profileData?.preferred_username;
+            if (username && window.location.pathname === '/') {
+              navigate(`/profile/${username}`);
+            }
           })
           .catch(() => {
             setAuthError('Unable to load user profile.');
@@ -181,6 +211,12 @@ const App = () => {
 
     return () => clearInterval(refreshInterval);
   }, []);
+
+  useEffect(() => {
+    if (!profileUsername) return;
+    fetchProfile(profileUsername);
+    fetchBooklists(profileUsername);
+  }, [profileUsername, localToken]);
 
   const loadFeed = async (tokenOverride) => {
     try {
@@ -219,6 +255,7 @@ const App = () => {
     setLocalToken('');
     setProfile(null);
     setAuthState({ loading: false, authenticated: false });
+    navigate('/');
   };
 
   const handleLoginChange = (event) => {
@@ -247,9 +284,69 @@ const App = () => {
       setProfile({ username: loginForm.username });
       setAuthState({ loading: false, authenticated: true });
       setLoginState({ loading: false, error: '' });
+      navigate(`/profile/${loginForm.username}`);
       loadFeed(data.access_token);
     } catch (err) {
       setLoginState({ loading: false, error: err.message || 'Login failed.' });
+    }
+  };
+
+  const handleBooklistChange = (event) => {
+    const { name, value } = event.target;
+    setBooklistForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateBooklist = async (event) => {
+    event.preventDefault();
+    const token = getActiveToken();
+    if (!token) {
+      setAuthError('Sign in to create a booklist.');
+      return;
+    }
+    try {
+      await authFetch('/booklists', token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(booklistForm),
+      });
+      setBooklistForm({ name: '', description: '', visibility: 'public' });
+      if (profileState.data?.username) {
+        fetchBooklists(profileState.data.username);
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Failed to create booklist.');
+    }
+  };
+
+  const fetchProfile = async (username) => {
+    setProfileState({ loading: true, error: '', data: null });
+    try {
+      const token = getActiveToken();
+      const response = await fetch(apiUrl(`/profile/${username}`), {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Profile request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      setProfileState({ loading: false, error: '', data });
+    } catch (err) {
+      setProfileState({ loading: false, error: err.message || 'Failed to load profile.', data: null });
+    }
+  };
+
+  const fetchBooklists = async (username) => {
+    try {
+      const response = await fetch(apiUrl(`/booklists/${username}`));
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Booklists request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      setBooklists(Array.isArray(data?.booklists) ? data.booklists : []);
+    } catch (err) {
+      setBooklists([]);
     }
   };
 
@@ -290,6 +387,8 @@ const App = () => {
       : profile?.username || 'Reader';
   const statusLabel = authState.authenticated ? 'Online' : 'Signed out';
   const hasConfig = hasKeycloakConfig();
+  const isProfileView = Boolean(profileUsername);
+  const isOwnProfile = Boolean(profileUsername && profile?.username === profileUsername);
 
   return (
     <>
@@ -461,55 +560,149 @@ const App = () => {
         </main>
       ) : (
         <main>
-          <section className="panel stack">
-            <header className="panel-header">
-              <div>
-                <p className="label">Books</p>
-                <h3>Latest feed</h3>
-              </div>
-              <div className="meta">{profile?.email}</div>
-            </header>
-            {authError && <p className="empty-state">{authError}</p>}
-            {feed.length === 0 ? (
-              <p className="empty-state">No reviews yet.</p>
-            ) : (
-              <ul className="feed-list books-list">
-                {feed.map((item) => {
-                  const itemKey = keyFor(item);
-                  return (
-                    <li key={itemKey}>
-                      {item.coverUrl ? (
-                        <div className="cover-thumb" aria-hidden="true">
-                          <img
-                            src={item.coverUrl}
-                            alt={item.book}
-                            loading="lazy"
-                            onError={() => handleImageError(itemKey)}
-                          />
-                        </div>
-                      ) : (
+          {isProfileView ? (
+            <>
+              <section className="panel stack">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Profile</p>
+                    <h3>{profileUsername}</h3>
+                  </div>
+                  <div className="meta">{profileState.data?.email}</div>
+                </header>
+                {profileState.loading ? (
+                  <p className="empty-state">Loading profile…</p>
+                ) : profileState.error ? (
+                  <p className="empty-state">{profileState.error}</p>
+                ) : (
+                  <div className="meta">
+                    <p>
+                      {profileState.data?.firstName} {profileState.data?.lastName}
+                    </p>
+                    <p>Age: {(profileState.data?.attributes?.age || [])[0] || '—'}</p>
+                  </div>
+                )}
+              </section>
+
+              <section className="panel stack">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Booklists</p>
+                    <h3>Curated shelves</h3>
+                  </div>
+                  <div className="meta">{booklists.length} lists</div>
+                </header>
+                {isOwnProfile && (
+                  <form className="form vertical" onSubmit={handleCreateBooklist}>
+                    <label className="field">
+                      <span className="meta">Name</span>
+                      <input
+                        name="name"
+                        value={booklistForm.name}
+                        onChange={handleBooklistChange}
+                        required
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="meta">Description</span>
+                      <input
+                        name="description"
+                        value={booklistForm.description}
+                        onChange={handleBooklistChange}
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="meta">Visibility</span>
+                      <select
+                        name="visibility"
+                        value={booklistForm.visibility}
+                        onChange={handleBooklistChange}
+                      >
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                        <option value="unlisted">Unlisted</option>
+                      </select>
+                    </label>
+                    <button className="primary" type="submit">
+                      Create booklist
+                    </button>
+                  </form>
+                )}
+                {booklists.length === 0 ? (
+                  <p className="empty-state">No booklists yet.</p>
+                ) : (
+                  <ul className="feed-list books-list">
+                    {booklists.map((list) => (
+                      <li key={list._id}>
                         <div className="avatar" aria-hidden="true">
-                          {initials(item.user)}
+                          {initials(list.name)}
                         </div>
-                      )}
-                      <div>
-                        <p className="title">
-                          <strong>{item.book}</strong>
-                        </p>
-                        <div className="tags">
-                          {item.user && <span className="tag">{item.user}</span>}
-                          {item.rating && (
-                            <span className="tag muted">{item.rating.toFixed(1)}★</span>
-                          )}
-                          {item.status && <span className="tag muted">{item.status}</span>}
+                        <div>
+                          <p className="title">
+                            <strong>{list.name}</strong>
+                          </p>
+                          <div className="tags">
+                            <span className="tag muted">{list.visibility}</span>
+                            <span className="tag muted">{list.totalItems ?? 0} books</span>
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
+          ) : (
+            <section className="panel stack">
+              <header className="panel-header">
+                <div>
+                  <p className="label">Books</p>
+                  <h3>Latest feed</h3>
+                </div>
+                <div className="meta">{profile?.email}</div>
+              </header>
+              {authError && <p className="empty-state">{authError}</p>}
+              {feed.length === 0 ? (
+                <p className="empty-state">No reviews yet.</p>
+              ) : (
+                <ul className="feed-list books-list">
+                  {feed.map((item) => {
+                    const itemKey = keyFor(item);
+                    return (
+                      <li key={itemKey}>
+                        {item.coverUrl ? (
+                          <div className="cover-thumb" aria-hidden="true">
+                            <img
+                              src={item.coverUrl}
+                              alt={item.book}
+                              loading="lazy"
+                              onError={() => handleImageError(itemKey)}
+                            />
+                          </div>
+                        ) : (
+                          <div className="avatar" aria-hidden="true">
+                            {initials(item.user)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="title">
+                            <strong>{item.book}</strong>
+                          </p>
+                          <div className="tags">
+                            {item.user && <span className="tag">{item.user}</span>}
+                            {item.rating && (
+                              <span className="tag muted">{item.rating.toFixed(1)}★</span>
+                            )}
+                            {item.status && <span className="tag muted">{item.status}</span>}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
         </main>
       )}
     </>
