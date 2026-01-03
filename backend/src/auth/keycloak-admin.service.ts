@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import https from 'https';
+import * as https from 'https';
 import type { IncomingHttpHeaders } from 'http';
 
 type SignupPayload = {
