@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import * as https from 'https';
+import type { IncomingHttpHeaders } from 'http';
 
 type TokenResponse = {
   access_token: string;
@@ -64,21 +66,30 @@ export class KeycloakAuthService {
     headers: Record<string, string>,
     body?: string,
   ) {
-    return this.requestWithFetch(method, url, headers, body);
-  }
+    return new Promise<{ status: number; body: string; headers: IncomingHttpHeaders }>(
+      (resolve, reject) => {
+        const req = https.request(
+          url,
+          { method, headers },
+          (res) => {
+            const chunks: Buffer[] = [];
+            res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+            res.on('end', () => {
+              resolve({
+                status: res.statusCode || 0,
+                body: Buffer.concat(chunks).toString('utf8'),
+                headers: res.headers,
+              });
+            });
+          },
+        );
 
-  private async requestWithFetch(
-    method: string,
-    url: URL,
-    headers: Record<string, string>,
-    body?: string,
-  ) {
-    const response = await fetch(url, { method, headers, body });
-    const text = await response.text();
-    return {
-      status: response.status,
-      body: text,
-      headers: Object.fromEntries(response.headers.entries()),
-    };
+        req.on('error', reject);
+        if (body) {
+          req.write(body);
+        }
+        req.end();
+      },
+    );
   }
 }
