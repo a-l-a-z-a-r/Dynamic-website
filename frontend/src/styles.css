@@ -1,9 +1,9 @@
 :root {
-  --bg: #0b0b10;
-  --bg-alt: #14121c;
-  --panel: rgba(12, 12, 18, 0.82);
-  --text: #f5f0ff;
-  --muted: #c1b4d6;
+  --bg: #06060a;
+  --bg-alt: #0d0d14;
+  --panel: rgba(8, 8, 12, 0.9);
+  --text: #f1f1f7;
+  --muted: #b2a9c2;
   --accent: #ff006e;
   --accent-2: #3a86ff;
   --accent-3: #ffbe0b;
@@ -20,7 +20,7 @@
 body {
   margin: 0;
   font-family: var(--font);
-  background: #0b0b10;
+  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   padding-bottom: 64px;
