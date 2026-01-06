@@ -67,6 +67,7 @@ const App = () => {
     visibility: 'public',
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedItems, setExpandedItems] = useState(() => new Set());
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -241,6 +242,26 @@ const App = () => {
   const handleFindBooks = () => {
     setSearchQuery('');
     loadFeed();
+  };
+
+  const toggleExpandedItem = (key) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const getBookDescription = (item) => {
+    const user = item.user || 'A reader';
+    const status = item.status || 'reviewed';
+    const ratingText =
+      typeof item.rating === 'number' ? `${item.rating.toFixed(1)}★` : 'no rating yet';
+    return `${item.book} was ${status} by ${user} with ${ratingText}.`;
   };
 
   const handleLogin = () => {
@@ -697,11 +718,26 @@ const App = () => {
               ) : filteredFeed.length === 0 ? (
                 <p className="empty-state">No matches. Clear the search to see all books.</p>
               ) : (
-                <ul className="feed-list books-list">
+                <ul className="feed-list books-list feed-list-clickable">
                   {filteredFeed.map((item) => {
                     const itemKey = keyFor(item);
+                    const isExpanded = expandedItems.has(itemKey);
+                    const description = getBookDescription(item);
                     return (
-                      <li key={itemKey}>
+                      <li
+                        key={itemKey}
+                        className={`feed-item${isExpanded ? ' expanded' : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isExpanded}
+                        onClick={() => toggleExpandedItem(itemKey)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            toggleExpandedItem(itemKey);
+                          }
+                        }}
+                      >
                         {item.coverUrl ? (
                           <div className="cover-thumb" aria-hidden="true">
                             <img
@@ -726,6 +762,14 @@ const App = () => {
                               <span className="tag muted">{item.rating.toFixed(1)}★</span>
                             )}
                             {item.status && <span className="tag muted">{item.status}</span>}
+                          </div>
+                          <div className="book-details">
+                            <p className="detail-label">Review</p>
+                            <p className="detail-text">
+                              {item.review || 'No review text yet.'}
+                            </p>
+                            <p className="detail-label">Description</p>
+                            <p className="detail-text">{description}</p>
                           </div>
                         </div>
                       </li>

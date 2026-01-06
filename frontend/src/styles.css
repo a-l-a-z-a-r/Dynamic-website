@@ -135,6 +135,33 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(26, 15, 36, 0.18);
 }
+.feed-list-clickable .feed-item { cursor: pointer; }
+.feed-list-clickable .feed-item:focus {
+  outline: 2px solid rgba(255, 0, 110, 0.7);
+  box-shadow: 0 0 0 4px rgba(58, 134, 255, 0.25);
+}
+.feed-list-clickable .feed-item .book-details {
+  margin-top: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.2s ease;
+}
+.feed-list-clickable .feed-item.expanded .book-details {
+  margin-top: 12px;
+  max-height: 240px;
+  opacity: 1;
+}
+.detail-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  color: #3a1d5a;
+  font-weight: 700;
+}
+.detail-text { color: #1a0f24; font-size: 0.95rem; line-height: 1.4; }
 .empty-state {
   margin: 12px 6px 0;
   color: var(--muted);
