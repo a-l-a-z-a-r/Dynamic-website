@@ -66,6 +66,7 @@ const App = () => {
     description: '',
     visibility: 'public',
   });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -237,6 +238,11 @@ const App = () => {
     }
   };
 
+  const handleFindBooks = () => {
+    setSearchQuery('');
+    loadFeed();
+  };
+
   const handleLogin = () => {
     const keycloak = getKeycloak();
     keycloak.login({
@@ -389,6 +395,15 @@ const App = () => {
   const hasConfig = hasKeycloakConfig();
   const isProfileView = Boolean(profileUsername);
   const isOwnProfile = Boolean(profileUsername && profile?.username === profileUsername);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredFeed = normalizedQuery
+    ? feed.filter((item) => {
+        const book = item.book?.toLowerCase() || '';
+        const user = item.user?.toLowerCase() || '';
+        const status = item.status?.toLowerCase() || '';
+        return book.includes(normalizedQuery) || user.includes(normalizedQuery) || status.includes(normalizedQuery);
+      })
+    : feed;
 
   return (
     <>
@@ -659,14 +674,31 @@ const App = () => {
                   <p className="label">Books</p>
                   <h3>Latest feed</h3>
                 </div>
-                <div className="meta">{profile?.email}</div>
+                <div className="dashboard-actions">
+                  <label className="field search-field">
+                    <span className="meta">Search</span>
+                    <input
+                      type="search"
+                      placeholder="Search books or readers"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      aria-label="Search books"
+                    />
+                  </label>
+                  <button className="primary" type="button" onClick={handleFindBooks}>
+                    Find books
+                  </button>
+                  <div className="meta">{profile?.email}</div>
+                </div>
               </header>
               {authError && <p className="empty-state">{authError}</p>}
               {feed.length === 0 ? (
                 <p className="empty-state">No reviews yet.</p>
+              ) : filteredFeed.length === 0 ? (
+                <p className="empty-state">No matches. Clear the search to see all books.</p>
               ) : (
                 <ul className="feed-list books-list">
-                  {feed.map((item) => {
+                  {filteredFeed.map((item) => {
                     const itemKey = keyFor(item);
                     return (
                       <li key={itemKey}>

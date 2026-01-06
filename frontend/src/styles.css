@@ -149,6 +149,9 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
 
 .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.dashboard-actions { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.search-field { min-width: 220px; margin: 0; }
+.search-field input { min-width: 220px; }
 
 .shelf { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
 .shelf-row { background: rgba(255, 255, 255, 0.7); padding: 12px; border-radius: 12px; border: 1px solid rgba(26, 15, 36, 0.18); }
@@ -233,6 +236,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid rgba(255, 0, 110,
   main { width: 94vw; }
   .actions { flex-direction: column; align-items: flex-start; }
   .feed-list li { grid-template-columns: 1fr; }
+  .dashboard-actions { width: 100%; justify-content: flex-start; }
+  .search-field { width: 100%; }
+  .search-field input { width: 100%; }
   .cover-thumb {
     width: 100%;
     min-width: 0;
