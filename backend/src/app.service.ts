@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Review } from './reviews/review.schema';
 import { ReviewPayload, ReviewsService } from './reviews/reviews.service';
+import { QueueService } from './queue/queue.service';
 
 type FeedItem = {
   user: string;
@@ -22,7 +23,10 @@ type Shelf = {
 
 @Injectable()
 export class AppService {
-  constructor(private readonly reviewsService: ReviewsService) {}
+  constructor(
+    private readonly reviewsService: ReviewsService,
+    private readonly queueService: QueueService,
+  ) {}
 
   private readonly coverMinBytes = this.readNumberEnv(process.env.COVER_MIN_BYTES, 2048);
   private readonly coverMinDimension = this.readNumberEnv(process.env.COVER_MIN_DIMENSION, 2);
@@ -90,6 +94,12 @@ export class AppService {
     if (payload.status === 'finished') {
       this.shelf.finished.push(payload.book as string);
       this.shelf.history.unshift({ label: 'Recent', finished: 1 });
+    }
+
+    try {
+      await this.queueService.publishReviewCreated(this.toFeedItem(created));
+    } catch (err) {
+      console.warn('RabbitMQ publish failed:', err);
     }
 
     return this.toResponse(created);
