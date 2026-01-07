@@ -8,6 +8,7 @@ const apiUrl = (path) => {
   return `${base}${path}`;
 };
 
+const DASHBOARD_PATH = '/dashboard';
 const keyFor = (item) => `${item.user ?? 'anon'}-${item.book ?? 'untitled'}-${item.created_at ?? ''}`;
 
 const authFetch = async (path, token, options = {}) => {
@@ -154,6 +155,12 @@ const App = () => {
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
+  useEffect(() => {
+    if (path !== '/') return;
+    window.history.replaceState({}, '', DASHBOARD_PATH);
+    setPath(DASHBOARD_PATH);
+  }, [path]);
+
   const navigate = (nextPath) => {
     if (nextPath === path) return;
     window.history.pushState({}, '', nextPath);
@@ -195,7 +202,7 @@ const App = () => {
             setProfile(profileData);
             const username = profileData?.username || profileData?.preferred_username;
             if (username && window.location.pathname === '/') {
-              navigate(`/profile/${username}`);
+              navigate(DASHBOARD_PATH);
             }
           })
           .catch(() => {
@@ -291,7 +298,7 @@ const App = () => {
     setLocalToken('');
     setProfile(null);
     setAuthState({ loading: false, authenticated: false });
-    navigate('/');
+    navigate(DASHBOARD_PATH);
   };
 
   const handleLoginChange = (event) => {
@@ -320,7 +327,7 @@ const App = () => {
       setProfile({ username: loginForm.username });
       setAuthState({ loading: false, authenticated: true });
       setLoginState({ loading: false, error: '' });
-      navigate(`/profile/${loginForm.username}`);
+      navigate(DASHBOARD_PATH);
       loadFeed(data.access_token);
     } catch (err) {
       setLoginState({ loading: false, error: err.message || 'Login failed.' });
