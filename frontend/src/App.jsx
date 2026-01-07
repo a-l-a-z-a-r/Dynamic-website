@@ -39,6 +39,13 @@ const initials = (name = '') =>
     .slice(0, 2)
     .toUpperCase();
 
+const formatRefreshTime = (value) => {
+  if (!value) return 'Not refreshed yet';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Unknown';
+  return parsed.toLocaleString();
+};
+
 const App = () => {
   const canvasRef = useRef(null);
   const initAuthRef = useRef(false);
@@ -46,6 +53,7 @@ const App = () => {
   const [profile, setProfile] = useState(null);
   const [authError, setAuthError] = useState('');
   const [feed, setFeed] = useState([]);
+  const [lastRefreshed, setLastRefreshed] = useState('');
   const [authView, setAuthView] = useState('signin');
   const [path, setPath] = useState(window.location.pathname);
   const [localToken, setLocalToken] = useState('');
@@ -232,6 +240,7 @@ const App = () => {
       }
       const feedRes = await authFetch('/feed', token);
       setFeed(feedRes?.feed ?? []);
+      setLastRefreshed(feedRes?.lastRefreshed || new Date().toISOString());
       setAuthError('');
     } catch (err) {
       console.error('Failed to load data', err);
@@ -710,6 +719,7 @@ const App = () => {
                     Find books
                   </button>
                   <div className="meta">{profile?.email}</div>
+                  <div className="meta">Last refreshed {formatRefreshTime(lastRefreshed)}</div>
                 </div>
               </header>
               {authError && <p className="empty-state">{authError}</p>}

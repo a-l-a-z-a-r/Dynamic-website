@@ -68,7 +68,7 @@ export class AppService {
   async getFeed() {
     const reviews = await this.reviewsService.findAll();
     const reviewFeed = reviews.map((review) => this.toFeedItem(review));
-    return { feed: reviewFeed };
+    return { feed: reviewFeed, lastRefreshed: new Date().toISOString() };
   }
 
   getShelf() {
