@@ -127,8 +127,14 @@ a { color: inherit; text-decoration: none; }
 }
 
 .small { padding: 6px 12px; font-size: 0.85rem; }
+.danger { color: #ffb3b3; border-color: rgba(255, 120, 120, 0.45); }
 
-.cta:hover, .primary:hover, .ghost:hover { transform: translateY(-1px); }
+.cta:hover, .primary:hover, .ghost:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.28);
+}
+.ghost:hover { background: rgba(244, 246, 245, 0.16); }
+.danger:hover { background: rgba(255, 120, 120, 0.18); }
 
 main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direction: column; gap: 28px; }
 
@@ -169,6 +175,7 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
   cursor: pointer;
   transition: background 0.2s ease, border 0.2s ease;
 }
+.sidebar-link:hover { background: rgba(30, 215, 96, 0.1); }
 .sidebar-link.active {
   background: rgba(30, 215, 96, 0.12);
   border-color: rgba(30, 215, 96, 0.3);
@@ -179,6 +186,7 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
 .sidebar-section-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; }
 
 .library-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.library-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
 .library-link {
   width: 100%;
   display: flex;
@@ -193,6 +201,7 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
   cursor: pointer;
   transition: border 0.2s ease, background 0.2s ease;
 }
+.library-link:hover { background: rgba(30, 215, 96, 0.08); }
 .library-link.active {
   border-color: rgba(30, 215, 96, 0.4);
   background: rgba(30, 215, 96, 0.12);
@@ -254,6 +263,7 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
 .stack { display: grid; gap: 12px; }
 
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.panel-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
 
 .label {
   color: var(--accent);

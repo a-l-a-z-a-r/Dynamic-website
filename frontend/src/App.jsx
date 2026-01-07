@@ -74,6 +74,7 @@ const App = () => {
   const [booklistItems, setBooklistItems] = useState([]);
   const [booklistItemsState, setBooklistItemsState] = useState({ loading: false, error: '' });
   const [booklistActionState, setBooklistActionState] = useState({ loading: false, error: '' });
+  const [booklistDeleteState, setBooklistDeleteState] = useState({ loading: false, error: '' });
   const [showBooklistForm, setShowBooklistForm] = useState(false);
   const [booklistForm, setBooklistForm] = useState({
     name: '',
@@ -473,6 +474,32 @@ const App = () => {
     }
   };
 
+  const handleDeleteBooklist = async (booklistId) => {
+    const token = getActiveToken();
+    if (!token) {
+      setBooklistDeleteState({ loading: false, error: 'Sign in to delete booklists.' });
+      return;
+    }
+    if (!window.confirm('Delete this booklist? This cannot be undone.')) {
+      return;
+    }
+    setBooklistDeleteState({ loading: true, error: '' });
+    try {
+      await authFetch(`/booklists/${booklistId}`, token, { method: 'DELETE' });
+      setBooklists((prev) => prev.filter((list) => list._id !== booklistId));
+      if (activeBooklistId === booklistId) {
+        setActiveBooklistId('');
+        setBooklistItems([]);
+      }
+      setBooklistDeleteState({ loading: false, error: '' });
+    } catch (err) {
+      setBooklistDeleteState({
+        loading: false,
+        error: err.message || 'Unable to delete booklist.',
+      });
+    }
+  };
+
   const formatAddedAt = (value) => {
     if (!value) return 'Unknown';
     const parsed = new Date(value);
@@ -736,7 +763,7 @@ const App = () => {
               ) : (
                 <ul className="library-list">
                   {booklists.map((list) => (
-                    <li key={list._id}>
+                    <li key={list._id} className="library-row">
                       <button
                         className={`library-link${activeBooklistId === list._id ? ' active' : ''}`}
                         type="button"
@@ -745,6 +772,19 @@ const App = () => {
                         <span>{list.name}</span>
                         <span className="meta">{list.totalItems ?? 0}</span>
                       </button>
+                      {list.ownerId === (profile?.username || profileState.data?.username) && (
+                        <button
+                          className="ghost small danger"
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteBooklist(list._id);
+                          }}
+                          disabled={booklistDeleteState.loading}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -900,7 +940,19 @@ const App = () => {
                       <p className="label">Your stacks</p>
                       <h3>{activeBooklist?.name || 'Select a list'}</h3>
                     </div>
-                    <div className="meta">{activeBooklist?.visibility || '—'}</div>
+                    <div className="panel-actions">
+                      <span className="meta">{activeBooklist?.visibility || '—'}</span>
+                      {activeBooklist && (
+                        <button
+                          className="ghost small danger"
+                          type="button"
+                          onClick={() => handleDeleteBooklist(activeBooklist._id)}
+                          disabled={booklistDeleteState.loading}
+                        >
+                          Delete list
+                        </button>
+                      )}
+                    </div>
                   </header>
                   {booklistItemsState.loading ? (
                     <p className="empty-state">Loading booklist items…</p>
@@ -923,6 +975,9 @@ const App = () => {
                   )}
                   {booklistActionState.error && (
                     <p className="empty-state">{booklistActionState.error}</p>
+                  )}
+                  {booklistDeleteState.error && (
+                    <p className="empty-state">{booklistDeleteState.error}</p>
                   )}
                 </section>
 
