@@ -431,7 +431,7 @@ const App = () => {
       <canvas ref={canvasRef} className="mandelbrot-bg" aria-hidden="true" />
       <header className="topbar">
         <div className="brand">
-          <span className="spark" />
+          <span className="logo-book" aria-hidden="true" />
           <span className="wordmark">Socialbook</span>
         </div>
         <div className="nav">
