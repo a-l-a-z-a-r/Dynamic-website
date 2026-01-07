@@ -70,6 +70,11 @@ const App = () => {
   });
   const [profileState, setProfileState] = useState({ loading: false, error: '', data: null });
   const [booklists, setBooklists] = useState([]);
+  const [activeBooklistId, setActiveBooklistId] = useState('');
+  const [booklistItems, setBooklistItems] = useState([]);
+  const [booklistItemsState, setBooklistItemsState] = useState({ loading: false, error: '' });
+  const [booklistActionState, setBooklistActionState] = useState({ loading: false, error: '' });
+  const [showBooklistForm, setShowBooklistForm] = useState(false);
   const [booklistForm, setBooklistForm] = useState({
     name: '',
     description: '',
@@ -235,6 +240,28 @@ const App = () => {
     fetchBooklists(profileUsername);
   }, [profileUsername, localToken]);
 
+  useEffect(() => {
+    if (!profile?.username && !profile?.preferred_username) return;
+    fetchBooklists(profile?.username || profile?.preferred_username);
+  }, [profile?.username, profile?.preferred_username, localToken]);
+
+  useEffect(() => {
+    if (!booklists.length) {
+      setActiveBooklistId('');
+      setBooklistItems([]);
+      return;
+    }
+    if (!activeBooklistId || !booklists.some((list) => list._id === activeBooklistId)) {
+      setActiveBooklistId(booklists[0]._id);
+    }
+  }, [booklists, activeBooklistId]);
+
+  useEffect(() => {
+    if (!activeBooklistId) return;
+    setBooklistActionState({ loading: false, error: '' });
+    fetchBooklistItems(activeBooklistId);
+  }, [activeBooklistId]);
+
   const loadFeed = async (tokenOverride) => {
     try {
       const keycloak = getKeycloak();
@@ -353,9 +380,11 @@ const App = () => {
         body: JSON.stringify(booklistForm),
       });
       setBooklistForm({ name: '', description: '', visibility: 'public' });
-      if (profileState.data?.username) {
-        fetchBooklists(profileState.data.username);
+      const owner = profile?.username || profileState.data?.username;
+      if (owner) {
+        fetchBooklists(owner);
       }
+      setShowBooklistForm(false);
     } catch (err) {
       setAuthError(err.message || 'Failed to create booklist.');
     }
@@ -391,6 +420,64 @@ const App = () => {
     } catch (err) {
       setBooklists([]);
     }
+  };
+
+  const fetchBooklistItems = async (booklistId) => {
+    setBooklistItemsState({ loading: true, error: '' });
+    try {
+      const response = await fetch(apiUrl(`/booklists/${booklistId}/items`));
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Booklist items request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      setBooklistItems(Array.isArray(data?.items) ? data.items : []);
+      setBooklistItemsState({ loading: false, error: '' });
+    } catch (err) {
+      setBooklistItems([]);
+      setBooklistItemsState({
+        loading: false,
+        error: err.message || 'Unable to load booklist items.',
+      });
+    }
+  };
+
+  const handleAddToBooklist = async (bookTitle) => {
+    if (!activeBooklistId) {
+      setBooklistActionState({ loading: false, error: 'Select a list first.' });
+      return;
+    }
+    const token = getActiveToken();
+    if (!token) {
+      setBooklistActionState({ loading: false, error: 'Sign in to update your lists.' });
+      return;
+    }
+    setBooklistActionState({ loading: true, error: '' });
+    try {
+      await authFetch(`/booklists/${activeBooklistId}/items`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId: bookTitle }),
+      });
+      fetchBooklistItems(activeBooklistId);
+      const owner = profile?.username || profileState.data?.username;
+      if (owner) {
+        fetchBooklists(owner);
+      }
+      setBooklistActionState({ loading: false, error: '' });
+    } catch (err) {
+      setBooklistActionState({
+        loading: false,
+        error: err.message || 'Unable to add book to list.',
+      });
+    }
+  };
+
+  const formatAddedAt = (value) => {
+    if (!value) return 'Unknown';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return 'Unknown';
+    return parsed.toLocaleDateString();
   };
 
   const handleSignupChange = (event) => {
@@ -431,7 +518,7 @@ const App = () => {
   const statusLabel = authState.authenticated ? 'Online' : 'Signed out';
   const hasConfig = hasKeycloakConfig();
   const isProfileView = Boolean(profileUsername);
-  const isOwnProfile = Boolean(profileUsername && profile?.username === profileUsername);
+  const activeBooklist = booklists.find((list) => list._id === activeBooklistId);
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredFeed = normalizedQuery
     ? feed.filter((item) => {
@@ -611,14 +698,97 @@ const App = () => {
           )}
         </main>
       ) : (
-        <main>
-          {isProfileView ? (
-            <>
+        <main className="app-shell">
+          <aside className="sidebar">
+            <div className="sidebar-header">
+              <div className="brand">
+                <span className="logo-book" aria-hidden="true" />
+                <span className="wordmark">Socialbook</span>
+              </div>
+              <span className="sidebar-meta">{statusLabel}</span>
+            </div>
+            <nav className="sidebar-nav">
+              <button
+                className={`sidebar-link${!isProfileView ? ' active' : ''}`}
+                type="button"
+                onClick={() => navigate(DASHBOARD_PATH)}
+              >
+                Dashboard
+              </button>
+              <button
+                className={`sidebar-link${isProfileView ? ' active' : ''}`}
+                type="button"
+                onClick={() => navigate(`/profile/${profile?.username || profileUsername || ''}`)}
+                disabled={!profile?.username && !profileUsername}
+              >
+                Profile
+              </button>
+            </nav>
+            <div className="sidebar-section">
+              <div className="sidebar-section-header">
+                <span>Your Library</span>
+                <button className="ghost small" type="button" onClick={() => setShowBooklistForm(true)}>
+                  New list
+                </button>
+              </div>
+              {booklists.length === 0 ? (
+                <p className="empty-state">No booklists yet.</p>
+              ) : (
+                <ul className="library-list">
+                  {booklists.map((list) => (
+                    <li key={list._id}>
+                      <button
+                        className={`library-link${activeBooklistId === list._id ? ' active' : ''}`}
+                        type="button"
+                        onClick={() => setActiveBooklistId(list._id)}
+                      >
+                        <span>{list.name}</span>
+                        <span className="meta">{list.totalItems ?? 0}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="sidebar-footer">
+              <span className="meta">{profile?.email}</span>
+              <button className="ghost" type="button" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          </aside>
+          <section className="content">
+            <header className="content-header">
+              <div>
+                <p className="label">{isProfileView ? 'Profile' : 'Dashboard'}</p>
+                <h2>{isProfileView ? profileUsername : `Welcome back, ${displayName}`}</h2>
+                {!isProfileView && (
+                  <p className="meta">Last refreshed {formatRefreshTime(lastRefreshed)}</p>
+                )}
+              </div>
+              <div className="content-actions">
+                <label className="field search-field">
+                  <span className="meta">Search</span>
+                  <input
+                    type="search"
+                    placeholder="Search books or readers"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    aria-label="Search books"
+                  />
+                </label>
+                <button className="primary" type="button" onClick={handleFindBooks}>
+                  Find books
+                </button>
+              </div>
+            </header>
+
+            {isProfileView ? (
               <section className="panel stack">
                 <header className="panel-header">
                   <div>
                     <p className="label">Profile</p>
-                    <h3>{profileUsername}</h3>
+                    <h3>{profileState.data?.username || profileUsername}</h3>
                   </div>
                   <div className="meta">{profileState.data?.email}</div>
                 </header>
@@ -627,175 +797,224 @@ const App = () => {
                 ) : profileState.error ? (
                   <p className="empty-state">{profileState.error}</p>
                 ) : (
-                  <div className="meta">
-                    <p>
+                  <>
+                    <p className="meta">
                       {profileState.data?.firstName} {profileState.data?.lastName}
                     </p>
-                    <p>Age: {(profileState.data?.attributes?.age || [])[0] || '—'}</p>
-                  </div>
+                    <div className="pill-row">
+                      <span className="pill">{booklists.length} public lists</span>
+                      <span className="pill">Followers: 0</span>
+                      <span className="pill">Following: 0</span>
+                    </div>
+                  </>
                 )}
               </section>
-
-              <section className="panel stack">
-                <header className="panel-header">
+            ) : (
+              <>
+                <section className="hero-card">
                   <div>
-                    <p className="label">Booklists</p>
-                    <h3>Curated shelves</h3>
+                    <p className="label">For you</p>
+                    <h3>Your listening queue, but for books.</h3>
+                    <p className="meta">
+                      Curate stacks, drop in your recent reads, and keep the feed rolling.
+                    </p>
+                    <div className="actions">
+                      <button className="cta" type="button" onClick={() => setShowBooklistForm(true)}>
+                        Create a booklist
+                      </button>
+                      <button className="ghost" type="button" onClick={() => navigate(`/profile/${profile?.username || ''}`)}>
+                        View profile
+                      </button>
+                    </div>
                   </div>
-                  <div className="meta">{booklists.length} lists</div>
-                </header>
-                {isOwnProfile && (
-                  <form className="form vertical" onSubmit={handleCreateBooklist}>
-                    <label className="field">
-                      <span className="meta">Name</span>
-                      <input
-                        name="name"
-                        value={booklistForm.name}
-                        onChange={handleBooklistChange}
-                        required
-                      />
-                    </label>
-                    <label className="field">
-                      <span className="meta">Description</span>
-                      <input
-                        name="description"
-                        value={booklistForm.description}
-                        onChange={handleBooklistChange}
-                      />
-                    </label>
-                    <label className="field">
-                      <span className="meta">Visibility</span>
-                      <select
-                        name="visibility"
-                        value={booklistForm.visibility}
-                        onChange={handleBooklistChange}
-                      >
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
-                        <option value="unlisted">Unlisted</option>
-                      </select>
-                    </label>
-                    <button className="primary" type="submit">
-                      Create booklist
-                    </button>
-                  </form>
+                  <div className="hero-metrics">
+                    <div>
+                      <p className="label">Booklists</p>
+                      <h4>{booklists.length}</h4>
+                      <p className="meta">Curated collections</p>
+                    </div>
+                    <div>
+                      <p className="label">Feed items</p>
+                      <h4>{feed.length}</h4>
+                      <p className="meta">Fresh activity</p>
+                    </div>
+                    <div>
+                      <p className="label">Active list</p>
+                      <h4>{activeBooklist?.name || 'None yet'}</h4>
+                      <p className="meta">{activeBooklist?.visibility || 'Create one'}</p>
+                    </div>
+                  </div>
+                </section>
+
+                {showBooklistForm && (
+                  <section className="panel stack">
+                    <header className="panel-header">
+                      <div>
+                        <p className="label">New list</p>
+                        <h3>Create a booklist</h3>
+                      </div>
+                      <button className="ghost" type="button" onClick={() => setShowBooklistForm(false)}>
+                        Close
+                      </button>
+                    </header>
+                    <form className="form" onSubmit={handleCreateBooklist}>
+                      <label className="field">
+                        <span className="meta">Name</span>
+                        <input
+                          name="name"
+                          value={booklistForm.name}
+                          onChange={handleBooklistChange}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Description</span>
+                        <input
+                          name="description"
+                          value={booklistForm.description}
+                          onChange={handleBooklistChange}
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Visibility</span>
+                        <select
+                          name="visibility"
+                          value={booklistForm.visibility}
+                          onChange={handleBooklistChange}
+                        >
+                          <option value="public">Public</option>
+                          <option value="private">Private</option>
+                          <option value="unlisted">Unlisted</option>
+                        </select>
+                      </label>
+                      <button className="primary" type="submit">
+                        Create booklist
+                      </button>
+                    </form>
+                  </section>
                 )}
-                {booklists.length === 0 ? (
-                  <p className="empty-state">No booklists yet.</p>
-                ) : (
-                  <ul className="feed-list books-list">
-                    {booklists.map((list) => (
-                      <li key={list._id}>
-                        <div className="avatar" aria-hidden="true">
-                          {initials(list.name)}
-                        </div>
-                        <div>
-                          <p className="title">
-                            <strong>{list.name}</strong>
-                          </p>
-                          <div className="tags">
-                            <span className="tag muted">{list.visibility}</span>
-                            <span className="tag muted">{list.totalItems ?? 0} books</span>
+
+                <section className="panel stack">
+                  <header className="panel-header">
+                    <div>
+                      <p className="label">Your stacks</p>
+                      <h3>{activeBooklist?.name || 'Select a list'}</h3>
+                    </div>
+                    <div className="meta">{activeBooklist?.visibility || '—'}</div>
+                  </header>
+                  {booklistItemsState.loading ? (
+                    <p className="empty-state">Loading booklist items…</p>
+                  ) : booklistItemsState.error ? (
+                    <p className="empty-state">{booklistItemsState.error}</p>
+                  ) : booklistItems.length === 0 ? (
+                    <p className="empty-state">No items yet. Add a book from the feed.</p>
+                  ) : (
+                    <ul className="queue-list">
+                      {booklistItems.map((item) => (
+                        <li key={item._id}>
+                          <div>
+                            <p className="title">{item.bookId}</p>
+                            <p className="meta">{item.notes || 'No notes yet'}</p>
                           </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            </>
-          ) : (
-            <section className="panel stack">
-              <header className="panel-header">
-                <div>
-                  <p className="label">Books</p>
-                  <h3>Latest feed</h3>
-                </div>
-                <div className="dashboard-actions">
-                  <label className="field search-field">
-                    <span className="meta">Search</span>
-                    <input
-                      type="search"
-                      placeholder="Search books or readers"
-                      value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
-                      aria-label="Search books"
-                    />
-                  </label>
-                  <button className="primary" type="button" onClick={handleFindBooks}>
-                    Find books
-                  </button>
-                  <div className="meta">{profile?.email}</div>
-                  <div className="meta">Last refreshed {formatRefreshTime(lastRefreshed)}</div>
-                </div>
-              </header>
-              {authError && <p className="empty-state">{authError}</p>}
-              {feed.length === 0 ? (
-                <p className="empty-state">No reviews yet.</p>
-              ) : filteredFeed.length === 0 ? (
-                <p className="empty-state">No matches. Clear the search to see all books.</p>
-              ) : (
-                <ul className="feed-list books-list feed-list-clickable">
-                  {filteredFeed.map((item) => {
-                    const itemKey = keyFor(item);
-                    const isExpanded = expandedItems.has(itemKey);
-                    const description = getBookDescription(item);
-                    return (
-                      <li
-                        key={itemKey}
-                        className={`feed-item${isExpanded ? ' expanded' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-expanded={isExpanded}
-                        onClick={() => toggleExpandedItem(itemKey)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            toggleExpandedItem(itemKey);
-                          }
-                        }}
-                      >
-                        {item.coverUrl ? (
-                          <div className="cover-thumb" aria-hidden="true">
-                            <img
-                              src={item.coverUrl}
-                              alt={item.book}
-                              loading="lazy"
-                              onError={() => handleImageError(itemKey)}
-                            />
-                          </div>
-                        ) : (
-                          <div className="avatar" aria-hidden="true">
-                            {initials(item.user)}
-                          </div>
-                        )}
-                        <div>
-                          <p className="title">
-                            <strong>{item.book}</strong>
-                          </p>
-                          <div className="tags">
-                            {item.user && <span className="tag">{item.user}</span>}
-                            {item.rating && (
-                              <span className="tag muted">{item.rating.toFixed(1)}★</span>
+                          <span className="meta">{formatAddedAt(item.addedAt)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {booklistActionState.error && (
+                    <p className="empty-state">{booklistActionState.error}</p>
+                  )}
+                </section>
+
+                <section className="panel stack">
+                  <header className="panel-header">
+                    <div>
+                      <p className="label">Latest feed</p>
+                      <h3>Fresh book activity</h3>
+                    </div>
+                  </header>
+                  {authError && <p className="empty-state">{authError}</p>}
+                  {feed.length === 0 ? (
+                    <p className="empty-state">No reviews yet.</p>
+                  ) : filteredFeed.length === 0 ? (
+                    <p className="empty-state">No matches. Clear the search to see all books.</p>
+                  ) : (
+                    <ul className="feed-list books-list feed-list-clickable">
+                      {filteredFeed.map((item) => {
+                        const itemKey = keyFor(item);
+                        const isExpanded = expandedItems.has(itemKey);
+                        const description = getBookDescription(item);
+                        return (
+                          <li
+                            key={itemKey}
+                            className={`feed-item${isExpanded ? ' expanded' : ''}`}
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={isExpanded}
+                            onClick={() => toggleExpandedItem(itemKey)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                toggleExpandedItem(itemKey);
+                              }
+                            }}
+                          >
+                            {item.coverUrl ? (
+                              <div className="cover-thumb" aria-hidden="true">
+                                <img
+                                  src={item.coverUrl}
+                                  alt={item.book}
+                                  loading="lazy"
+                                  onError={() => handleImageError(itemKey)}
+                                />
+                              </div>
+                            ) : (
+                              <div className="avatar" aria-hidden="true">
+                                {initials(item.user)}
+                              </div>
                             )}
-                            {item.status && <span className="tag muted">{item.status}</span>}
-                          </div>
-                          <div className="book-details">
-                            <p className="detail-label">Review</p>
-                            <p className="detail-text">
-                              {item.review || 'No review text yet.'}
-                            </p>
-                            <p className="detail-label">Description</p>
-                            <p className="detail-text">{description}</p>
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
-          )}
+                            <div>
+                              <p className="title">
+                                <strong>{item.book}</strong>
+                              </p>
+                              <div className="tags">
+                                {item.user && <span className="tag">{item.user}</span>}
+                                {item.status && <span className="tag muted">{item.status}</span>}
+                                {item.rating && <span className="tag muted">{item.rating.toFixed(1)}★</span>}
+                              </div>
+                              <div className="book-details">
+                                <div>
+                                  <p className="detail-label">Summary</p>
+                                  <p className="detail-text">{description}</p>
+                                </div>
+                                {item.review && (
+                                  <div>
+                                    <p className="detail-label">Review</p>
+                                    <p className="detail-text">{item.review}</p>
+                                  </div>
+                                )}
+                                <button
+                                  className="ghost small"
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleAddToBooklist(item.book);
+                                  }}
+                                  disabled={booklistActionState.loading}
+                                >
+                                  Add to {activeBooklist?.name || 'list'}
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+              </>
+            )}
+          </section>
         </main>
       )}
     </>
