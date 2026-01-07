@@ -59,6 +59,7 @@ spec:
         app: backend
       annotations:
         app.kubernetes.io/version: "latest"
+        app.kubernetes.io/rollout-trigger: "2026-01-07T09:20:00Z"
     spec:
       containers:
         - name: backend
