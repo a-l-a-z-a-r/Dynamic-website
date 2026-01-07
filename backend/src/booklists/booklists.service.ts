@@ -56,4 +56,14 @@ export class BooklistsService {
   async listItems(booklistId: string) {
     return this.itemModel.find({ booklistId }).sort({ position: 1, addedAt: -1 }).lean();
   }
+
+  async deleteList(booklistId: string, ownerId: string) {
+    const list = await this.booklistModel.findById(booklistId);
+    if (!list || list.ownerId !== ownerId) {
+      return false;
+    }
+    await this.itemModel.deleteMany({ booklistId });
+    await this.booklistModel.deleteOne({ _id: booklistId });
+    return true;
+  }
 }

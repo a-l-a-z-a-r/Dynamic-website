@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   HttpStatus,
@@ -81,5 +82,22 @@ export class BooklistsController {
     }
     const item = await this.booklistsService.addItem(booklistId, ownerId, body);
     return item;
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Delete('booklists/:booklistId')
+  async deleteBooklist(@Param('booklistId') booklistId: string, @Req() req: AuthRequest) {
+    const ownerId = (req.user?.preferred_username as string) || (req.user?.username as string);
+    if (!ownerId) {
+      throw new HttpException({ error: 'Missing owner' }, HttpStatus.FORBIDDEN);
+    }
+    if (!booklistId) {
+      throw new HttpException({ error: 'Missing booklist' }, HttpStatus.BAD_REQUEST);
+    }
+    const deleted = await this.booklistsService.deleteList(booklistId, ownerId);
+    if (!deleted) {
+      throw new HttpException({ error: 'Booklist not found' }, HttpStatus.NOT_FOUND);
+    }
+    return { ok: true };
   }
 }
