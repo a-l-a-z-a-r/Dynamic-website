@@ -1,4 +1,4 @@
-#Socialbook 
+# Socialbook 
 
-Sotify but for books; ENJOY!!
+Spotify but for books; ENJOY!!
 
