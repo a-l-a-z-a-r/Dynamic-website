@@ -1,9 +1,19 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { ReviewPayload } from './reviews/reviews.service';
 import { KeycloakAuthGuard } from './auth/keycloak.guard';
 import { KeycloakAdminService } from './auth/keycloak-admin.service';
 import { KeycloakAuthService } from './auth/keycloak-auth.service';
+import { QueueService } from './queue/queue.service';
 
 type SignupPayload = {
   username: string;
@@ -18,12 +28,18 @@ type LoginPayload = {
   password: string;
 };
 
+type ImportPayload = {
+  query: string;
+  source?: string;
+};
+
 @Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly keycloakAdminService: KeycloakAdminService,
     private readonly keycloakAuthService: KeycloakAuthService,
+    private readonly queueService: QueueService,
   ) {}
 
   @UseGuards(KeycloakAuthGuard)
@@ -58,6 +74,19 @@ export class AppController {
     }
 
     return this.appService.addReview(body);
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Post('imports')
+  async requestImport(@Body() body: ImportPayload) {
+    if (!body?.query) {
+      throw new HttpException({ error: 'Missing import query' }, HttpStatus.BAD_REQUEST);
+    }
+    await this.queueService.enqueueImport({
+      query: body.query,
+      source: body.source,
+    });
+    return { ok: true };
   }
 
   @Post('signup')
