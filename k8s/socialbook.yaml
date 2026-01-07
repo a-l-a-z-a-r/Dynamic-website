@@ -117,6 +117,7 @@ spec:
           image: alazar111/socialbook-frontend:latest
 
 
+
           imagePullPolicy: Always
           ports:
             - containerPort: 80
