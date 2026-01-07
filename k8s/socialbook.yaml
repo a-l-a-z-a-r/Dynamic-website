@@ -58,11 +58,11 @@ spec:
       labels:
         app: backend
       annotations:
-        app.kubernetes.io/version: "backend-7902a6d14b41a9f4254b5c1f2063190802f0da6f"
+        app.kubernetes.io/version: "latest"
     spec:
       containers:
         - name: backend
-          image: alazar111/socialbook-backend:backend-7902a6d14b41a9f4254b5c1f2063190802f0da6f
+          image: alazar111/socialbook-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -80,7 +80,7 @@ spec:
             - name: KEYCLOAK_PUBLIC_CLIENT_ID
               value: socialbook
             - name: BACKEND_IMAGE_TAG
-              value: backend-7902a6d14b41a9f4254b5c1f2063190802f0da6f
+              value: latest
 ---
 apiVersion: v1
 kind: Service
@@ -114,7 +114,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: alazar111/socialbook-frontend:frontend-7633abd
+          image: alazar111/socialbook-frontend:latest
 
 
           imagePullPolicy: Always
