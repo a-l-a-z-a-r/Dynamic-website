@@ -1,0 +1,2 @@
+# Exclude large assets that don't belong in the release record
+rabbitmq.png

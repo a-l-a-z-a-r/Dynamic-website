@@ -1,0 +1,15 @@
+# RabbitMQ Configuration
+Image: "rabbitmq:3-management"
+
+# RabbitMQ Credentials
+# ⚠️ IMPORTANT: Change these for production!
+RabbitMQUser: "admin"
+RabbitMQPassword: "HelloWorld123"
+
+# Ingress configuration for RabbitMQ management UI
+ingress:
+  enabled: true
+  host: rabbitmq.ltu-m7011e-11.se
+  className: nginx
+  certIssuer: letsencrypt-prod
+  tlsSecretName: rabbitmq-tls
