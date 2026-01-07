@@ -19,8 +19,8 @@ message: "Hello from Production Environment - Live Site"
 
 # Container image
 image:
-  repository: nginx
-  tag: alpine
+  repository: alazar111/socialbook-backend
+  tag: backend-7902a6d14b41a9f4254b5c1f2063190802f0da6f
 
 # Ingress configuration
 ingress:
