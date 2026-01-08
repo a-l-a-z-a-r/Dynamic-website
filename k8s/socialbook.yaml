@@ -114,6 +114,7 @@ spec:
         app: frontend
       annotations:
         app.kubernetes.io/version: "latest"
+        app.kubernetes.io/rollout-trigger: "2026-01-07T09:20:00Z"
     spec:
       containers:
         - name: frontend
@@ -133,6 +134,8 @@ spec:
               value: Userenter
             - name: VITE_KEYCLOAK_CLIENT_ID
               value: socialbook
+            - name: FRONTEND_IMAGE_TAG
+              value: latest
 ---
 apiVersion: v1
 kind: Service
