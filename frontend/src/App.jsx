@@ -326,9 +326,18 @@ const App = () => {
 
         const token = getActiveToken();
         const usersPromise = token
-          ? authFetch(`/users?search=${encodeURIComponent(query)}`, token).then((data) =>
-              Array.isArray(data?.users) ? data.users : [],
-            )
+          ? fetch(apiUrl(`/users?search=${encodeURIComponent(query)}`), {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+              .then(async (response) => {
+                if (response.status === 404) return { users: [] };
+                if (!response.ok) {
+                  const message = await response.text();
+                  throw new Error(message || `User search failed: ${response.status}`);
+                }
+                return response.json();
+              })
+              .then((data) => (Array.isArray(data?.users) ? data.users : []))
           : Promise.resolve([]);
 
         const [booklists, users] = await Promise.all([booklistsPromise, usersPromise]);
@@ -479,18 +488,35 @@ const App = () => {
   };
 
 
-  const handleCommentChange = (reviewId, value) => {
-    if (!reviewId) return;
-    setCommentDrafts((prev) => ({ ...prev, [reviewId]: value }));
+  const handleCommentChange = (commentKey, value) => {
+    if (!commentKey) return;
+    setCommentDrafts((prev) => ({ ...prev, [commentKey]: value }));
   };
 
-  const handleSubmitComment = async (reviewId) => {
-    if (!reviewId) {
+  const resolveReviewId = async (fallbackKey) => {
+    const token = getActiveToken();
+    if (!token) return null;
+    try {
+      const data = await authFetch('/reviews', token);
+      const reviews = Array.isArray(data?.reviews) ? data.reviews : [];
+      const match = reviews.find((review) => keyFor(review) === fallbackKey);
+      return match?.id || match?._id || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleSubmitComment = async (reviewId, fallbackKey) => {
+    let resolvedId = reviewId;
+    if (!resolvedId && fallbackKey) {
+      resolvedId = await resolveReviewId(fallbackKey);
+    }
+    if (!resolvedId) {
       setCommentState({ loading: false, error: 'Missing review to comment on.' });
       return;
     }
     const token = getActiveToken();
-    const message = (commentDrafts[reviewId] || '').trim();
+    const message = (commentDrafts[resolvedId] || '').trim();
     if (!token) {
       setCommentState({ loading: false, error: 'Sign in to comment.' });
       return;
@@ -501,12 +527,12 @@ const App = () => {
     }
     setCommentState({ loading: true, error: '' });
     try {
-      await authFetch(`/reviews/${reviewId}/comments`, token, {
+      await authFetch(`/reviews/${resolvedId}/comments`, token, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
       });
-      setCommentDrafts((prev) => ({ ...prev, [reviewId]: '' }));
+      setCommentDrafts((prev) => ({ ...prev, [resolvedId]: '' }));
       setCommentState({ loading: false, error: '' });
       loadFeed(token);
     } catch (err) {
@@ -1449,7 +1475,8 @@ const App = () => {
                         const isExpanded = expandedItems.has(itemKey);
                         const description = getBookDescription(item);
                         const reviewId = item.id || item._id;
-                        const commentValue = reviewId ? commentDrafts[reviewId] || '' : '';
+                        const commentKey = reviewId || itemKey;
+                        const commentValue = commentDrafts[commentKey] || '';
                         return (
                           <li
                             key={itemKey}
@@ -1545,7 +1572,7 @@ const App = () => {
                                     value={commentValue}
                                     onChange={(event) => {
                                       event.stopPropagation();
-                                      handleCommentChange(reviewId, event.target.value);
+                                      handleCommentChange(commentKey, event.target.value);
                                     }}
                                     onClick={(event) => event.stopPropagation()}
                                     disabled={!reviewId}
@@ -1555,9 +1582,9 @@ const App = () => {
                                     type="button"
                                     onClick={(event) => {
                                       event.stopPropagation();
-                                      handleSubmitComment(reviewId);
+                                      handleSubmitComment(reviewId, itemKey);
                                     }}
-                                    disabled={!reviewId || commentState.loading}
+                                    disabled={commentState.loading}
                                   >
                                     Comment
                                   </button>
