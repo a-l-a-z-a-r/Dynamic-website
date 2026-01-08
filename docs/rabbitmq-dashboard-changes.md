@@ -5,7 +5,7 @@ This document describes the recent Socialbook changes: RabbitMQ integration and 
 ## Backend changes
 
 ### RabbitMQ integration
-
+fjgugutigutgtgtigit0u0958t57
 - Added a RabbitMQ client module/service that:
   - Publishes `review.created` events when a review is created.
   - Publishes `import.requested` jobs from a new API endpoint.

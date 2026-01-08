@@ -26,6 +26,11 @@ export class ReviewsService {
     return this.reviewModel.find().lean().exec();
   }
 
+  async findByBook(book: string): Promise<Review[]> {
+    if (!book) return [];
+    return this.reviewModel.find({ book }).sort({ created_at: -1 }).lean().exec();
+  }
+
   async deleteByCoverUrl(coverUrl: string) {
     if (!coverUrl) return;
     await this.reviewModel.deleteMany({ coverUrl }).exec();

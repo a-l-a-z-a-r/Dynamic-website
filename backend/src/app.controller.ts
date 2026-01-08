@@ -44,6 +44,14 @@ type ProfileImagePayload = {
   imageUrl: string;
 };
 
+type BookReviewPayload = {
+  rating?: number | string;
+  review?: string;
+  genre?: string;
+  status?: string;
+  coverUrl?: string;
+};
+
 @Controller()
 export class AppController {
   constructor(
@@ -76,6 +84,44 @@ export class AppController {
   @Get('reviews')
   async getReviews() {
     return this.appService.getReviews();
+  }
+
+  @Get('books/:book')
+  async getBook(@Param('book') book: string) {
+    if (!book) {
+      throw new HttpException({ error: 'Missing book' }, HttpStatus.BAD_REQUEST);
+    }
+    const decoded = decodeURIComponent(book);
+    return this.appService.getBookDetails(decoded);
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Post('books/:book/reviews')
+  async addBookReview(
+    @Param('book') book: string,
+    @Body() body: BookReviewPayload,
+    @Req() req: { user?: Record<string, unknown> },
+  ) {
+    const ownerId =
+      (req.user?.preferred_username as string) || (req.user?.username as string);
+    if (!ownerId) {
+      throw new HttpException({ error: 'Missing owner' }, HttpStatus.FORBIDDEN);
+    }
+    if (!book || !body?.review || !body?.genre) {
+      throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
+    }
+    const rating = Number(body.rating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      throw new HttpException({ error: 'Invalid rating' }, HttpStatus.BAD_REQUEST);
+    }
+    const decoded = decodeURIComponent(book);
+    return this.appService.addBookReview(decoded, ownerId, {
+      rating,
+      review: body.review,
+      genre: body.genre,
+      status: body.status,
+      coverUrl: body.coverUrl,
+    });
   }
 
   @UseGuards(KeycloakAuthGuard)

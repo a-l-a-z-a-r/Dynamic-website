@@ -353,6 +353,31 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
   flex: 1;
 }
 
+.link-button {
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.link-button:hover {
+  color: var(--accent);
+}
+
+.book-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.book-reviews {
+  display: grid;
+  gap: 12px;
+}
+
 .profile-image {
   width: 96px;
   height: 96px;
