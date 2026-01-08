@@ -6,5 +6,5 @@ declare module 'amqplib' {
   };
 
   const amqplib: any;
-  export default amqplib;
+  export = amqplib;
 }
