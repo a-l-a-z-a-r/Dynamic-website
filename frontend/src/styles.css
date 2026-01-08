@@ -378,6 +378,10 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
   gap: 12px;
 }
 
+.friend-lists {
+  margin-top: 10px;
+}
+
 .star-rating {
   display: flex;
   gap: 6px;

@@ -17,6 +17,8 @@ import { KeycloakAdminService } from './auth/keycloak-admin.service';
 import { KeycloakAuthService } from './auth/keycloak-auth.service';
 import { QueueService } from './queue/queue.service';
 import { ProfilesService } from './profiles/profiles.service';
+import { FriendsService } from './friends/friends.service';
+import { BooklistsService } from './booklists/booklists.service';
 
 type SignupPayload = {
   username: string;
@@ -52,6 +54,10 @@ type BookReviewPayload = {
   coverUrl?: string;
 };
 
+type FriendPayload = {
+  friendId: string;
+};
+
 @Controller()
 export class AppController {
   constructor(
@@ -60,6 +66,8 @@ export class AppController {
     private readonly keycloakAuthService: KeycloakAuthService,
     private readonly queueService: QueueService,
     private readonly profilesService: ProfilesService,
+    private readonly friendsService: FriendsService,
+    private readonly booklistsService: BooklistsService,
   ) {}
 
   @UseGuards(KeycloakAuthGuard)
@@ -243,6 +251,49 @@ export class AppController {
     }
     const users = await this.keycloakAdminService.searchUsers(search);
     return { users };
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Get('friends')
+  async listFriends(@Req() req: { user?: Record<string, unknown> }) {
+    const ownerId =
+      (req.user?.preferred_username as string) || (req.user?.username as string);
+    if (!ownerId) {
+      throw new HttpException({ error: 'Missing owner' }, HttpStatus.FORBIDDEN);
+    }
+    const friends = await this.friendsService.listFriends(ownerId);
+    return { friends };
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Post('friends')
+  async addFriend(
+    @Body() body: FriendPayload,
+    @Req() req: { user?: Record<string, unknown> },
+  ) {
+    const ownerId =
+      (req.user?.preferred_username as string) || (req.user?.username as string);
+    if (!ownerId) {
+      throw new HttpException({ error: 'Missing owner' }, HttpStatus.FORBIDDEN);
+    }
+    if (!body?.friendId) {
+      throw new HttpException({ error: 'Missing friend' }, HttpStatus.BAD_REQUEST);
+    }
+    if (body.friendId === ownerId) {
+      throw new HttpException({ error: 'Cannot add yourself' }, HttpStatus.BAD_REQUEST);
+    }
+    const friend = await this.friendsService.addFriend(ownerId, body.friendId);
+    return { ok: true, friend };
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Get('friends/:friendId/booklists')
+  async getFriendBooklists(@Param('friendId') friendId: string) {
+    if (!friendId) {
+      throw new HttpException({ error: 'Missing friend' }, HttpStatus.BAD_REQUEST);
+    }
+    const lists = await this.booklistsService.findPublicByOwner(friendId);
+    return { booklists: lists };
   }
 
   @Post('login')
