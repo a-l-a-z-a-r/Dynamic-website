@@ -98,6 +98,8 @@ const App = () => {
   const [friendsState, setFriendsState] = useState({ loading: false, error: '', friends: [] });
   const [friendForm, setFriendForm] = useState({ username: '' });
   const [friendBooklists, setFriendBooklists] = useState({});
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const [commentState, setCommentState] = useState({ loading: false, error: '' });
   const [replyDrafts, setReplyDrafts] = useState({});
   const [replyState, setReplyState] = useState({ loading: false, error: '' });
   const [searchQuery, setSearchQuery] = useState('');
@@ -649,6 +651,41 @@ const App = () => {
 
   const handleMarkRead = () => {
     setBookReviewForm((prev) => ({ ...prev, status: 'finished' }));
+  };
+
+  const handleCommentChange = (reviewId, value) => {
+    if (!reviewId) return;
+    setCommentDrafts((prev) => ({ ...prev, [reviewId]: value }));
+  };
+
+  const handleCommentSubmit = async (reviewId) => {
+    const token = getActiveToken();
+    const message = (commentDrafts[reviewId] || '').trim();
+    if (!token) {
+      setCommentState({ loading: false, error: 'Sign in to comment.' });
+      return;
+    }
+    if (!message) {
+      setCommentState({ loading: false, error: 'Write a comment first.' });
+      return;
+    }
+    setCommentState({ loading: true, error: '' });
+    try {
+      await authFetch(`/reviews/${reviewId}/comments`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      setCommentDrafts((prev) => ({ ...prev, [reviewId]: '' }));
+      setCommentState({ loading: false, error: '' });
+      const response = await fetch(apiUrl(`/books/${encodeURIComponent(bookTitle)}`));
+      if (response.ok) {
+        const data = await response.json();
+        setBookState({ loading: false, error: '', data });
+      }
+    } catch (err) {
+      setCommentState({ loading: false, error: err.message || 'Unable to comment.' });
+    }
   };
 
   const handleReplyChange = (commentId, value) => {
@@ -1385,6 +1422,25 @@ const App = () => {
                                     : 'No rating'}
                                 </div>
                                 <p className="meta">{review.review}</p>
+                                <div className="comment-form">
+                                  <input
+                                    type="text"
+                                    placeholder="Add a comment"
+                                    value={commentDrafts[review.id || review._id] || ''}
+                                    onChange={(event) =>
+                                      handleCommentChange(review.id || review._id, event.target.value)
+                                    }
+                                  />
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={() => handleCommentSubmit(review.id || review._id)}
+                                    disabled={commentState.loading}
+                                  >
+                                    Comment
+                                  </button>
+                                </div>
+                                {commentState.error && <p className="empty-state">{commentState.error}</p>}
                                 {Array.isArray(review.comments) && review.comments.length > 0 && (
                                   <ul className="comment-list">
                                     {review.comments.map((comment) => (
