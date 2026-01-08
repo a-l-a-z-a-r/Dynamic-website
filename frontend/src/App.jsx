@@ -602,6 +602,19 @@ const App = () => {
     setBookReviewForm((prev) => ({ ...prev, rating: value }));
   };
 
+  const renderStars = (value) => {
+    const rating = Number(value) || 0;
+    return (
+      <span className="star-display" aria-label={`Rating ${rating} out of 5`}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span key={star} className={rating >= star ? 'filled' : ''}>
+            ★
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   const handleBookReviewSubmit = async (event) => {
     event.preventDefault();
     if (!bookTitle) return;
@@ -1194,11 +1207,11 @@ const App = () => {
                             <li key={review.id || review._id}>
                               <div>
                                 <p className="title">{review.user}</p>
-                                <p className="meta">
+                                <div className="meta">
                                   {typeof review.rating === 'number'
-                                    ? `${review.rating.toFixed(1)}★`
+                                    ? renderStars(review.rating)
                                     : 'No rating'}
-                                </p>
+                                </div>
                                 <p className="meta">{review.review}</p>
                               </div>
                               <span className="meta">{formatRefreshTime(review.created_at)}</span>
