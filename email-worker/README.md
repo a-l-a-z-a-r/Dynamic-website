@@ -24,3 +24,4 @@ npm start
 - `RABBITMQ_ROUTING_KEY`: Routing key (default: `review.commented`).
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: SMTP settings.
 - `EMAIL_FROM`, `EMAIL_TO`: Email sender and recipient.
+- `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_ADMIN_CLIENT_ID`, `KEYCLOAK_ADMIN_CLIENT_SECRET`: Used to look up the commenter email for replies.

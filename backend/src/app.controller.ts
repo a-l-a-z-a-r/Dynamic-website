@@ -42,6 +42,11 @@ type CommentPayload = {
   message: string;
 };
 
+type ReplyPayload = {
+  message: string;
+  reviewId: string;
+};
+
 type ProfileImagePayload = {
   imageUrl: string;
 };
@@ -162,6 +167,33 @@ export class AppController {
       throw new HttpException({ error: 'Review not found' }, HttpStatus.NOT_FOUND);
     }
     return updated;
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Post('comments/:commentId/replies')
+  async addCommentReply(
+    @Param('commentId') commentId: string,
+    @Body() body: ReplyPayload,
+    @Req() req: { user?: Record<string, unknown> },
+  ) {
+    const ownerId =
+      (req.user?.preferred_username as string) || (req.user?.username as string);
+    if (!ownerId) {
+      throw new HttpException({ error: 'Missing owner' }, HttpStatus.FORBIDDEN);
+    }
+    if (!commentId || !body?.message || !body?.reviewId) {
+      throw new HttpException({ error: 'Missing reply' }, HttpStatus.BAD_REQUEST);
+    }
+    const created = await this.appService.addReplyToComment(
+      body.reviewId,
+      commentId,
+      ownerId,
+      body.message,
+    );
+    if (!created) {
+      throw new HttpException({ error: 'Comment not found' }, HttpStatus.NOT_FOUND);
+    }
+    return created;
   }
 
   @UseGuards(KeycloakAuthGuard)

@@ -6,6 +6,7 @@ import { BooklistsModule } from './booklists/booklists.module';
 import { QueueModule } from './queue/queue.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { FriendsModule } from './friends/friends.module';
+import { CommentsModule } from './comments/comments.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { KeycloakAdminService } from './auth/keycloak-admin.service';
@@ -20,6 +21,7 @@ import { KeycloakAuthService } from './auth/keycloak-auth.service';
     QueueModule,
     ProfilesModule,
     FriendsModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, KeycloakAdminService, KeycloakAuthService],

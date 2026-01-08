@@ -31,6 +31,11 @@ export class ReviewsService {
     return this.reviewModel.find({ book }).sort({ created_at: -1 }).lean().exec();
   }
 
+  async findById(reviewId: string) {
+    if (!reviewId) return null;
+    return this.reviewModel.findById(reviewId).lean().exec();
+  }
+
   async deleteByCoverUrl(coverUrl: string) {
     if (!coverUrl) return;
     await this.reviewModel.deleteMany({ coverUrl }).exec();

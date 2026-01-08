@@ -97,6 +97,8 @@ const App = () => {
   const [friendsState, setFriendsState] = useState({ loading: false, error: '', friends: [] });
   const [friendForm, setFriendForm] = useState({ username: '' });
   const [friendBooklists, setFriendBooklists] = useState({});
+  const [replyDrafts, setReplyDrafts] = useState({});
+  const [replyState, setReplyState] = useState({ loading: false, error: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItems, setExpandedItems] = useState(() => new Set());
 
@@ -646,6 +648,41 @@ const App = () => {
 
   const handleMarkRead = () => {
     setBookReviewForm((prev) => ({ ...prev, status: 'finished' }));
+  };
+
+  const handleReplyChange = (commentId, value) => {
+    if (!commentId) return;
+    setReplyDrafts((prev) => ({ ...prev, [commentId]: value }));
+  };
+
+  const handleReplySubmit = async (reviewId, commentId) => {
+    const token = getActiveToken();
+    const message = (replyDrafts[commentId] || '').trim();
+    if (!token) {
+      setReplyState({ loading: false, error: 'Sign in to reply.' });
+      return;
+    }
+    if (!message) {
+      setReplyState({ loading: false, error: 'Write a reply first.' });
+      return;
+    }
+    setReplyState({ loading: true, error: '' });
+    try {
+      await authFetch(`/comments/${commentId}/replies`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, reviewId }),
+      });
+      setReplyDrafts((prev) => ({ ...prev, [commentId]: '' }));
+      setReplyState({ loading: false, error: '' });
+      const response = await fetch(apiUrl(`/books/${encodeURIComponent(bookTitle)}`));
+      if (response.ok) {
+        const data = await response.json();
+        setBookState({ loading: false, error: '', data });
+      }
+    } catch (err) {
+      setReplyState({ loading: false, error: err.message || 'Unable to reply.' });
+    }
   };
 
   const handleFriendChange = (event) => {
@@ -1328,6 +1365,54 @@ const App = () => {
                                     : 'No rating'}
                                 </div>
                                 <p className="meta">{review.review}</p>
+                                {Array.isArray(review.comments) && review.comments.length > 0 && (
+                                  <ul className="comment-list">
+                                    {review.comments.map((comment) => (
+                                      <li key={comment.id}>
+                                        <p className="detail-text">
+                                          <strong>{comment.user}:</strong> {comment.message}
+                                        </p>
+                                        <span className="meta">
+                                          {formatRefreshTime(comment.created_at)}
+                                        </span>
+                                        {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+                                          <ul className="comment-list replies">
+                                            {comment.replies.map((reply) => (
+                                              <li key={reply.id}>
+                                                <p className="detail-text">
+                                                  <strong>{reply.user}:</strong> {reply.message}
+                                                </p>
+                                                <span className="meta">
+                                                  {formatRefreshTime(reply.created_at)}
+                                                </span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        )}
+                                        <div className="comment-form">
+                                          <input
+                                            type="text"
+                                            placeholder="Reply to comment"
+                                            value={replyDrafts[comment.id] || ''}
+                                            onChange={(event) =>
+                                              handleReplyChange(comment.id, event.target.value)
+                                            }
+                                          />
+                                          <button
+                                            className="ghost small"
+                                            type="button"
+                                            onClick={() =>
+                                              handleReplySubmit(review.id || review._id, comment.id)
+                                            }
+                                            disabled={replyState.loading}
+                                          >
+                                            Reply
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                               </div>
                               <span className="meta">{formatRefreshTime(review.created_at)}</span>
                             </li>

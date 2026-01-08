@@ -343,6 +343,13 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
   gap: 8px;
 }
 
+.comment-list.replies {
+  margin-top: 8px;
+  margin-left: 16px;
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
+}
+
 .comment-form {
   display: flex;
   gap: 8px;

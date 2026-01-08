@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Review } from './reviews/review.schema';
 import { ReviewPayload, ReviewsService } from './reviews/reviews.service';
 import { QueueService } from './queue/queue.service';
+import { CommentsService } from './comments/comments.service';
 
 type FeedItem = {
   id?: string;
@@ -28,6 +29,7 @@ export class AppService {
   constructor(
     private readonly reviewsService: ReviewsService,
     private readonly queueService: QueueService,
+    private readonly commentsService: CommentsService,
   ) {}
 
   private readonly coverMinBytes = this.readNumberEnv(process.env.COVER_MIN_BYTES, 2048);
@@ -92,9 +94,20 @@ export class AppService {
 
   async getBookDetails(book: string) {
     const reviews = await this.reviewsService.findByBook(book);
+    const reviewIds = reviews
+      .map((review) => (review as any)._id?.toString?.())
+      .filter(Boolean);
+    const comments = await this.commentsService.listByReviewIds(reviewIds);
+    const commentThreads = this.buildCommentThreads(comments);
     return {
       book,
-      reviews: reviews.map((review) => this.toResponse(review)),
+      reviews: reviews.map((review) => {
+        const id = (review as any)._id?.toString?.();
+        return {
+          ...this.toResponse(review),
+          comments: commentThreads[id] || [],
+        };
+      }),
     };
   }
 
@@ -119,20 +132,54 @@ export class AppService {
   }
 
   async addReviewComment(reviewId: string, user: string, message: string) {
-    const updated = await this.reviewsService.addComment(reviewId, { user, message });
-    if (!updated) {
+    const review = await this.reviewsService.findById(reviewId);
+    if (!review) {
       return null;
     }
+    const comment = await this.commentsService.create({ reviewId, user, message });
     try {
       await this.queueService.publishReviewCommented({
         reviewId,
+        commentId: (comment as any)._id?.toString?.(),
         user,
         message,
+        targetUser: (review as any).user,
       });
     } catch (err) {
       console.warn('RabbitMQ comment publish failed:', err);
     }
-    return this.toResponse(updated as Review);
+    return this.toResponse(review as Review);
+  }
+
+  async addReplyToComment(
+    reviewId: string,
+    parentCommentId: string,
+    user: string,
+    message: string,
+  ) {
+    const parent = await this.commentsService.findById(parentCommentId);
+    if (!parent) {
+      return null;
+    }
+    const created = await this.commentsService.create({
+      reviewId,
+      user,
+      message,
+      parentCommentId,
+    });
+    try {
+      await this.queueService.publishReviewCommented({
+        reviewId,
+        commentId: (created as any)._id?.toString?.(),
+        parentCommentId,
+        user,
+        message,
+        targetUser: parent.user,
+      });
+    } catch (err) {
+      console.warn('RabbitMQ comment publish failed:', err);
+    }
+    return created;
   }
 
   async addReview(payload: ReviewPayload) {
@@ -196,11 +243,7 @@ export class AppService {
       status: review.status ?? 'review',
       created_at: this.formatCreatedAt(review.created_at),
       coverUrl: review.coverUrl,
-      comments: (review as any).comments?.map((comment: any) => ({
-        user: comment.user,
-        message: comment.message,
-        created_at: this.formatCreatedAt(comment.created_at),
-      })),
+      comments: [],
     };
   }
 
@@ -214,12 +257,36 @@ export class AppService {
       genre: review.genre,
       created_at: this.formatCreatedAt(review.created_at),
       coverUrl: (review as any).coverUrl,
-      comments: (review as any).comments?.map((comment: any) => ({
+      comments: [],
+    };
+  }
+
+  private buildCommentThreads(comments: any[]) {
+    const byReview: Record<string, any[]> = {};
+    const byId: Record<string, any> = {};
+    comments.forEach((comment) => {
+      const id = comment._id?.toString?.() ?? '';
+      byId[id] = {
+        id,
+        reviewId: comment.reviewId,
         user: comment.user,
         message: comment.message,
         created_at: this.formatCreatedAt(comment.created_at),
-      })),
-    };
+        parentCommentId: comment.parentCommentId,
+        replies: [],
+      };
+    });
+    Object.values(byId).forEach((comment: any) => {
+      if (comment.parentCommentId && byId[comment.parentCommentId]) {
+        byId[comment.parentCommentId].replies.push(comment);
+      } else {
+        if (!byReview[comment.reviewId]) {
+          byReview[comment.reviewId] = [];
+        }
+        byReview[comment.reviewId].push(comment);
+      }
+    });
+    return byReview;
   }
 
   private formatCreatedAt(value: unknown) {
