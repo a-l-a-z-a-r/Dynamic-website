@@ -148,3 +148,68 @@ spec:
     - name: http
       port: 80
       targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-worker
+  namespace: socialbook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: email-worker
+  template:
+    metadata:
+      labels:
+        app: email-worker
+      annotations:
+        app.kubernetes.io/version: "latest"
+        app.kubernetes.io/rollout-trigger: "dev-${GIT_SHA}"
+    spec:
+      containers:
+        - name: email-worker
+          image: alazar111/socialbook-email-worker:latest
+          imagePullPolicy: Always
+          env:
+            - name: RABBITMQ_URL
+              value: amqp://admin:HelloWorld123@rabbitmq-service-api.rabbitmq.svc.cluster.local:5672
+            - name: RABBITMQ_EXCHANGE
+              value: socialbook.events
+            - name: RABBITMQ_QUEUE
+              value: socialbook.comments
+            - name: RABBITMQ_ROUTING_KEY
+              value: review.commented
+            - name: KEYCLOAK_URL
+              value: https://keycloak.ltu-m7011e-11.se
+            - name: KEYCLOAK_REALM
+              value: Userenter
+            - name: KEYCLOAK_ADMIN_CLIENT_ID
+              value: socialbook-admin
+            - name: KEYCLOAK_ADMIN_CLIENT_SECRET
+              value: Q5kcOEPkC2guAT5yKPJgnc7FPNmIROje
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: email-worker-smtp
+                  key: SMTP_HOST
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: email-worker-smtp
+                  key: SMTP_PORT
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: email-worker-smtp
+                  key: SMTP_USER
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: email-worker-smtp
+                  key: SMTP_PASS
+            - name: EMAIL_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: email-worker-smtp
+                  key: EMAIL_FROM
