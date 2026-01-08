@@ -40,6 +40,14 @@ export class BooklistsService {
     return this.booklistModel.find({ ownerId }).sort({ updatedAt: -1 }).lean();
   }
 
+  async findPublicByOwner(ownerId: string) {
+    if (!ownerId) return [];
+    return this.booklistModel
+      .find({ ownerId, visibility: 'public' })
+      .sort({ updatedAt: -1 })
+      .lean();
+  }
+
   async searchPublicLists(query: string, limit = 12) {
     const normalized = query.trim();
     if (!normalized) return [];

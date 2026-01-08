@@ -96,6 +96,9 @@ const App = () => {
     coverUrl: '',
   });
   const [bookReviewState, setBookReviewState] = useState({ loading: false, error: '', success: false });
+  const [friendsState, setFriendsState] = useState({ loading: false, error: '', friends: [] });
+  const [friendForm, setFriendForm] = useState({ username: '' });
+  const [friendBooklists, setFriendBooklists] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItems, setExpandedItems] = useState(() => new Set());
 
@@ -193,6 +196,7 @@ const App = () => {
   const profileUsername = profileMatch ? decodeURIComponent(profileMatch[1]) : '';
   const bookMatch = path.match(/^\/book\/(.+)$/);
   const bookTitle = bookMatch ? decodeURIComponent(bookMatch[1]) : '';
+  const isFriendsView = path === '/friends';
 
   useEffect(() => {
     if (!hasKeycloakConfig()) {
@@ -307,6 +311,32 @@ const App = () => {
       active = false;
     };
   }, [bookTitle]);
+
+  useEffect(() => {
+    if (!isFriendsView) return;
+    const token = getActiveToken();
+    if (!token) {
+      setFriendsState({ loading: false, error: 'Sign in to see friends.', friends: [] });
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      setFriendsState({ loading: true, error: '', friends: [] });
+      try {
+        const data = await authFetch('/friends', token);
+        const friends = Array.isArray(data?.friends) ? data.friends : [];
+        if (!active) return;
+        setFriendsState({ loading: false, error: '', friends });
+      } catch (err) {
+        if (!active) return;
+        setFriendsState({ loading: false, error: err.message || 'Unable to load friends.', friends: [] });
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [isFriendsView]);
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -670,6 +700,53 @@ const App = () => {
 
   const handleMarkRead = () => {
     setBookReviewForm((prev) => ({ ...prev, status: 'finished' }));
+  };
+
+  const handleFriendChange = (event) => {
+    const { value } = event.target;
+    setFriendForm({ username: value });
+  };
+
+  const handleAddFriend = async (event) => {
+    event.preventDefault();
+    const token = getActiveToken();
+    if (!token) {
+      setFriendsState((prev) => ({ ...prev, error: 'Sign in to add friends.' }));
+      return;
+    }
+    const friendId = friendForm.username.trim();
+    if (!friendId) {
+      setFriendsState((prev) => ({ ...prev, error: 'Enter a username.' }));
+      return;
+    }
+    try {
+      await authFetch('/friends', token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendId }),
+      });
+      setFriendForm({ username: '' });
+      const data = await authFetch('/friends', token);
+      const friends = Array.isArray(data?.friends) ? data.friends : [];
+      setFriendsState({ loading: false, error: '', friends });
+    } catch (err) {
+      setFriendsState((prev) => ({
+        ...prev,
+        error: err.message || 'Unable to add friend.',
+      }));
+    }
+  };
+
+  const loadFriendBooklists = async (friendId) => {
+    const token = getActiveToken();
+    if (!token) return;
+    try {
+      const data = await authFetch(`/friends/${encodeURIComponent(friendId)}/booklists`, token);
+      const lists = Array.isArray(data?.booklists) ? data.booklists : [];
+      setFriendBooklists((prev) => ({ ...prev, [friendId]: lists }));
+    } catch {
+      setFriendBooklists((prev) => ({ ...prev, [friendId]: [] }));
+    }
   };
 
   const fetchBooklists = async (username) => {
@@ -1036,6 +1113,18 @@ const App = () => {
             </nav>
             <div className="sidebar-section">
               <div className="sidebar-section-header">
+                <span>Community</span>
+              </div>
+              <button
+                className={`library-link${isFriendsView ? ' active' : ''}`}
+                type="button"
+                onClick={() => navigate('/friends')}
+              >
+                Friends
+              </button>
+            </div>
+            <div className="sidebar-section">
+              <div className="sidebar-section-header">
                 <span>Your Library</span>
                 <button className="ghost small" type="button" onClick={() => setShowBooklistForm(true)}>
                   New list
@@ -1084,14 +1173,16 @@ const App = () => {
             <header className="content-header">
               <div>
                 <p className="label">
-                  {isBookView ? 'Book' : isProfileView ? 'Profile' : 'Dashboard'}
+                  {isBookView ? 'Book' : isProfileView ? 'Profile' : isFriendsView ? 'Friends' : 'Dashboard'}
                 </p>
                 <h2>
                   {isBookView
                     ? bookTitle
                     : isProfileView
                       ? profileUsername
-                      : `Welcome back, ${displayName}`}
+                      : isFriendsView
+                        ? 'Your friends'
+                        : `Welcome back, ${displayName}`}
                 </h2>
               </div>
               <div className="content-actions">
@@ -1105,7 +1196,7 @@ const App = () => {
                     aria-label="Search books"
                   />
                 </label>
-                {!isBookView && (
+                {!isBookView && !isFriendsView && (
                   <button className="ghost" type="button" onClick={handleFindBooks}>
                     Refresh feed
                   </button>
@@ -1113,7 +1204,79 @@ const App = () => {
               </div>
             </header>
 
-            {isBookView ? (
+            {isFriendsView ? (
+              <section className="panel stack">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Friends</p>
+                    <h3>People you follow</h3>
+                  </div>
+                </header>
+                <form className="form" onSubmit={handleAddFriend}>
+                  <label className="field">
+                    <span className="meta">Add friend</span>
+                    <input
+                      name="friend"
+                      placeholder="Username"
+                      value={friendForm.username}
+                      onChange={handleFriendChange}
+                      required
+                    />
+                  </label>
+                  {friendsState.error && <p className="empty-state">{friendsState.error}</p>}
+                  <button className="primary" type="submit">
+                    Add friend
+                  </button>
+                </form>
+                {friendsState.loading ? (
+                  <p className="empty-state">Loading friends…</p>
+                ) : friendsState.friends.length === 0 ? (
+                  <p className="empty-state">No friends yet.</p>
+                ) : (
+                  <ul className="queue-list">
+                    {friendsState.friends.map((friend) => (
+                      <li key={friend.friendId || friend._id}>
+                        <div>
+                          <p className="title">{friend.friendId}</p>
+                          <button
+                            className="ghost small"
+                            type="button"
+                            onClick={() => navigate(`/profile/${friend.friendId}`)}
+                          >
+                            View profile
+                          </button>
+                        </div>
+                        <button
+                          className="ghost small"
+                          type="button"
+                          onClick={() => loadFriendBooklists(friend.friendId)}
+                        >
+                          Load booklists
+                        </button>
+                        {Array.isArray(friendBooklists[friend.friendId]) && (
+                          <div className="friend-lists">
+                            {friendBooklists[friend.friendId].length === 0 ? (
+                              <p className="empty-state">No public lists.</p>
+                            ) : (
+                              <ul className="queue-list">
+                                {friendBooklists[friend.friendId].map((list) => (
+                                  <li key={list._id}>
+                                    <div>
+                                      <p className="title">{list.name}</p>
+                                      <p className="meta">{list.description || 'No description'}</p>
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ) : isBookView ? (
               <section className="panel stack">
                 <header className="panel-header">
                   <div>
@@ -1520,7 +1683,7 @@ const App = () => {
                         const isExpanded = expandedItems.has(itemKey);
                         const description = getBookDescription(item);
                         const reviewId = item.id || item._id;
-                        const commentKey = reviewId || itemKey;
+                        const commentKey = reviewId || `${item.user || 'anon'}-${item.book || 'untitled'}`;
                         const commentValue = commentDrafts[commentKey] || '';
                         return (
                           <li
@@ -1567,7 +1730,9 @@ const App = () => {
                               <div className="tags">
                                 {item.user && <span className="tag">{item.user}</span>}
                                 {item.status && <span className="tag muted">{item.status}</span>}
-                                {item.rating && <span className="tag muted">{item.rating.toFixed(1)}★</span>}
+                                {typeof item.rating === 'number' && (
+                                  <span className="tag muted">{renderStars(item.rating)}</span>
+                                )}
                               </div>
                               <div className="book-details">
                                 {item.review && (
@@ -1615,8 +1780,9 @@ const App = () => {
                                       event.stopPropagation();
                                       handleCommentChange(commentKey, event.target.value);
                                     }}
+                                    onKeyDown={(event) => event.stopPropagation()}
+                                    onMouseDown={(event) => event.stopPropagation()}
                                     onClick={(event) => event.stopPropagation()}
-                                    disabled={!reviewId}
                                   />
                                   <button
                                     className="ghost small"
