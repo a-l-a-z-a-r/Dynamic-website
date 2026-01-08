@@ -83,8 +83,6 @@ const App = () => {
   });
   const [profileImageForm, setProfileImageForm] = useState('');
   const [profileImageState, setProfileImageState] = useState({ loading: false, error: '', success: false });
-  const [commentDrafts, setCommentDrafts] = useState({});
-  const [commentState, setCommentState] = useState({ loading: false, error: '' });
   const [searchResults, setSearchResults] = useState({ booklists: [], users: [] });
   const [searchState, setSearchState] = useState({ loading: false, error: '' });
   const [bookState, setBookState] = useState({ loading: false, error: '', data: null });
@@ -517,58 +515,6 @@ const App = () => {
     }
   };
 
-
-  const handleCommentChange = (commentKey, value) => {
-    if (!commentKey) return;
-    setCommentDrafts((prev) => ({ ...prev, [commentKey]: value }));
-  };
-
-  const resolveReviewId = async (fallbackKey) => {
-    const token = getActiveToken();
-    if (!token) return null;
-    try {
-      const data = await authFetch('/reviews', token);
-      const reviews = Array.isArray(data?.reviews) ? data.reviews : [];
-      const match = reviews.find((review) => keyFor(review) === fallbackKey);
-      return match?.id || match?._id || null;
-    } catch {
-      return null;
-    }
-  };
-
-  const handleSubmitComment = async (reviewId, fallbackKey) => {
-    let resolvedId = reviewId;
-    if (!resolvedId && fallbackKey) {
-      resolvedId = await resolveReviewId(fallbackKey);
-    }
-    if (!resolvedId) {
-      setCommentState({ loading: false, error: 'Missing review to comment on.' });
-      return;
-    }
-    const token = getActiveToken();
-    const message = (commentDrafts[resolvedId] || commentDrafts[fallbackKey] || '').trim();
-    if (!token) {
-      setCommentState({ loading: false, error: 'Sign in to comment.' });
-      return;
-    }
-    if (!message) {
-      setCommentState({ loading: false, error: 'Write a comment first.' });
-      return;
-    }
-    setCommentState({ loading: true, error: '' });
-    try {
-      await authFetch(`/reviews/${resolvedId}/comments`, token, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
-      });
-      setCommentDrafts((prev) => ({ ...prev, [resolvedId]: '', [fallbackKey]: '' }));
-      setCommentState({ loading: false, error: '' });
-      loadFeed(token);
-    } catch (err) {
-      setCommentState({ loading: false, error: err.message || 'Unable to add comment.' });
-    }
-  };
 
   const fetchProfile = async (username) => {
     setProfileState({ loading: true, error: '', data: null });
@@ -1298,6 +1244,12 @@ const App = () => {
                         Read book
                       </button>
                     </div>
+                    <p className="book-description">
+                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse
+                      lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras
+                      elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non,
+                      mi.
+                    </p>
                     <form className="form" onSubmit={handleBookReviewSubmit}>
                       <label className="field">
                         <span className="meta">Your rating</span>
@@ -1671,7 +1623,6 @@ const App = () => {
                     </div>
                   </header>
                   {authError && <p className="empty-state">{authError}</p>}
-                  {commentState.error && <p className="empty-state">{commentState.error}</p>}
                   {feed.length === 0 ? (
                     <p className="empty-state">No reviews yet.</p>
                   ) : filteredFeed.length === 0 ? (
@@ -1682,9 +1633,6 @@ const App = () => {
                         const itemKey = keyFor(item);
                         const isExpanded = expandedItems.has(itemKey);
                         const description = getBookDescription(item);
-                        const reviewId = item.id || item._id;
-                        const commentKey = reviewId || `${item.user || 'anon'}-${item.book || 'untitled'}`;
-                        const commentValue = commentDrafts[commentKey] || '';
                         return (
                           <li
                             key={itemKey}
@@ -1741,23 +1689,6 @@ const App = () => {
                                     <p className="detail-text">{item.review}</p>
                                   </div>
                                 )}
-                                {Array.isArray(item.comments) && item.comments.length > 0 && (
-                                  <div>
-                                    <p className="detail-label">Comments</p>
-                                    <ul className="comment-list">
-                                      {item.comments.map((comment, index) => (
-                                        <li key={`${reviewId || itemKey}-comment-${index}`}>
-                                          <p className="detail-text">
-                                            <strong>{comment.user}:</strong> {comment.message}
-                                          </p>
-                                          <span className="meta">
-                                            {formatRefreshTime(comment.created_at)}
-                                          </span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
                                 <div className="button-row">
                                   <button
                                     className="ghost small"
@@ -1769,31 +1700,6 @@ const App = () => {
                                     disabled={booklistActionState.loading}
                                   >
                                     Add to {activeBooklist?.name || 'list'}
-                                  </button>
-                                </div>
-                                <div className="comment-form">
-                                  <input
-                                    type="text"
-                                    placeholder="Add a comment"
-                                    value={commentValue}
-                                    onChange={(event) => {
-                                      event.stopPropagation();
-                                      handleCommentChange(commentKey, event.target.value);
-                                    }}
-                                    onKeyDown={(event) => event.stopPropagation()}
-                                    onMouseDown={(event) => event.stopPropagation()}
-                                    onClick={(event) => event.stopPropagation()}
-                                  />
-                                  <button
-                                    className="ghost small"
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      handleSubmitComment(reviewId, itemKey);
-                                    }}
-                                    disabled={commentState.loading}
-                                  >
-                                    Comment
                                   </button>
                                 </div>
                               </div>
