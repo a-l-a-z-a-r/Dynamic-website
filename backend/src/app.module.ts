@@ -4,6 +4,7 @@ import { DatabaseModule } from './database/database.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { BooklistsModule } from './booklists/booklists.module';
 import { QueueModule } from './queue/queue.module';
+import { ProfilesModule } from './profiles/profiles.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { KeycloakAdminService } from './auth/keycloak-admin.service';
@@ -16,6 +17,7 @@ import { KeycloakAuthService } from './auth/keycloak-auth.service';
     ReviewsModule,
     BooklistsModule,
     QueueModule,
+    ProfilesModule,
   ],
   controllers: [AppController],
   providers: [AppService, KeycloakAdminService, KeycloakAuthService],
