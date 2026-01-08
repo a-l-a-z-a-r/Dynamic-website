@@ -13,7 +13,7 @@ fjgugutigutgtgtigit0u0958t57
     - `socialbook.notifications`
     - `socialbook.recommendations`
     - `socialbook.imports`
-    - `socialbook.feed-fanout`
+    - `socialbook.feed-fanout`  
 - RabbitMQ connection is controlled by `RABBITMQ_URL` and defaults to the in-cluster service.
 
 ### New API endpoint
