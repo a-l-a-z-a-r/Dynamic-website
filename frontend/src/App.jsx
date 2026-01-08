@@ -1288,6 +1288,14 @@ const App = () => {
                   <p className="empty-state">{bookState.error}</p>
                 ) : (
                   <>
+                    {bookState.data?.reviews?.find((review) => review.coverUrl)?.coverUrl ? (
+                      <div className="book-cover">
+                        <img
+                          src={bookState.data.reviews.find((review) => review.coverUrl).coverUrl}
+                          alt={bookTitle}
+                        />
+                      </div>
+                    ) : null}
                     <div className="book-actions">
                       <button className="ghost" type="button" onClick={handleMarkRead}>
                         Read book
