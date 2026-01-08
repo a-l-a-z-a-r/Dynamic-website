@@ -378,6 +378,24 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
   gap: 12px;
 }
 
+.star-rating {
+  display: flex;
+  gap: 6px;
+}
+
+.star-rating .star {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: rgba(244, 246, 245, 0.35);
+  cursor: pointer;
+  padding: 0;
+}
+
+.star-rating .star.selected {
+  color: var(--accent);
+}
+
 .profile-image {
   width: 96px;
   height: 96px;

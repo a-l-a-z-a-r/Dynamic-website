@@ -123,6 +123,15 @@ export class AppService {
     if (!updated) {
       return null;
     }
+    try {
+      await this.queueService.publishReviewCommented({
+        reviewId,
+        user,
+        message,
+      });
+    } catch (err) {
+      console.warn('RabbitMQ comment publish failed:', err);
+    }
     return this.toResponse(updated as Review);
   }
 
