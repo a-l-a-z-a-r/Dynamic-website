@@ -1633,6 +1633,7 @@ const App = () => {
                         const itemKey = keyFor(item);
                         const isExpanded = expandedItems.has(itemKey);
                         const description = getBookDescription(item);
+                        const bookUrl = item.book ? `/book/${encodeURIComponent(item.book)}` : '';
                         return (
                           <li
                             key={itemKey}
