@@ -14,5 +14,6 @@ import { BooklistsService } from './booklists.service';
   ],
   controllers: [BooklistsController],
   providers: [BooklistsService],
+  exports: [BooklistsService],
 })
 export class BooklistsModule {}
