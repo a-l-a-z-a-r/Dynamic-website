@@ -48,6 +48,8 @@ kind: Deployment
 metadata:
   name: backend
   namespace: socialbook
+  annotations:
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
 spec:
   replicas: 1
   selector:
