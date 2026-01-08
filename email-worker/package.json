@@ -1,0 +1,15 @@
+{
+  "name": "socialbook-email-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "RabbitMQ email worker for Socialbook events",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "nodemailer": "^6.9.13"
+  }
+}
