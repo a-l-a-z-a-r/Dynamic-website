@@ -90,6 +90,34 @@ export class AppService {
     return { reviews: reviews.map((review) => this.toResponse(review)) };
   }
 
+  async getBookDetails(book: string) {
+    const reviews = await this.reviewsService.findByBook(book);
+    return {
+      book,
+      reviews: reviews.map((review) => this.toResponse(review)),
+    };
+  }
+
+  async addBookReview(
+    book: string,
+    user: string,
+    payload: Omit<ReviewPayload, 'book' | 'user'>,
+  ) {
+    const created = await this.reviewsService.create({
+      ...payload,
+      book,
+      user,
+    });
+
+    try {
+      await this.queueService.publishReviewCreated(this.toFeedItem(created));
+    } catch (err) {
+      console.warn('RabbitMQ publish failed:', err);
+    }
+
+    return this.toResponse(created);
+  }
+
   async addReviewComment(reviewId: string, user: string, message: string) {
     const updated = await this.reviewsService.addComment(reviewId, { user, message });
     if (!updated) {

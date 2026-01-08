@@ -97,6 +97,15 @@ const App = () => {
   const [commentState, setCommentState] = useState({ loading: false, error: '' });
   const [searchResults, setSearchResults] = useState({ booklists: [], users: [] });
   const [searchState, setSearchState] = useState({ loading: false, error: '' });
+  const [bookState, setBookState] = useState({ loading: false, error: '', data: null });
+  const [bookReviewForm, setBookReviewForm] = useState({
+    rating: '',
+    review: '',
+    genre: '',
+    status: 'review',
+    coverUrl: '',
+  });
+  const [bookReviewState, setBookReviewState] = useState({ loading: false, error: '', success: false });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItems, setExpandedItems] = useState(() => new Set());
 
@@ -192,6 +201,8 @@ const App = () => {
   const getActiveToken = () => localToken || getKeycloak().token;
   const profileMatch = path.match(/^\/profile\/([^/]+)$/);
   const profileUsername = profileMatch ? decodeURIComponent(profileMatch[1]) : '';
+  const bookMatch = path.match(/^\/book\/(.+)$/);
+  const bookTitle = bookMatch ? decodeURIComponent(bookMatch[1]) : '';
 
   useEffect(() => {
     if (!hasKeycloakConfig()) {
@@ -278,6 +289,34 @@ const App = () => {
     setBooklistActionState({ loading: false, error: '' });
     fetchBooklistItems(activeBooklistId);
   }, [activeBooklistId]);
+
+  useEffect(() => {
+    if (!bookTitle) {
+      setBookState({ loading: false, error: '', data: null });
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      setBookState({ loading: true, error: '', data: null });
+      try {
+        const response = await fetch(apiUrl(`/books/${encodeURIComponent(bookTitle)}`));
+        if (!response.ok) {
+          const message = await response.text();
+          throw new Error(message || `Book request failed: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!active) return;
+        setBookState({ loading: false, error: '', data });
+      } catch (err) {
+        if (!active) return;
+        setBookState({ loading: false, error: err.message || 'Unable to load book.', data: null });
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [bookTitle]);
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -606,6 +645,68 @@ const App = () => {
     }
   };
 
+  const handleBookReviewChange = (event) => {
+    const { name, value } = event.target;
+    setBookReviewForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleBookReviewSubmit = async (event) => {
+    event.preventDefault();
+    if (!bookTitle) return;
+    const token = getActiveToken();
+    if (!token) {
+      setBookReviewState({ loading: false, error: 'Sign in to add a review.', success: false });
+      return;
+    }
+    const rating = Number(bookReviewForm.rating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      setBookReviewState({ loading: false, error: 'Rating must be between 1 and 5.', success: false });
+      return;
+    }
+    if (!bookReviewForm.review.trim() || !bookReviewForm.genre.trim()) {
+      setBookReviewState({ loading: false, error: 'Add a comment and genre.', success: false });
+      return;
+    }
+    setBookReviewState({ loading: true, error: '', success: false });
+    try {
+      await authFetch(`/books/${encodeURIComponent(bookTitle)}/reviews`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating,
+          review: bookReviewForm.review.trim(),
+          genre: bookReviewForm.genre.trim(),
+          status: bookReviewForm.status,
+          coverUrl: bookReviewForm.coverUrl?.trim() || undefined,
+        }),
+      });
+      setBookReviewForm({
+        rating: '',
+        review: '',
+        genre: '',
+        status: 'review',
+        coverUrl: '',
+      });
+      setBookReviewState({ loading: false, error: '', success: true });
+      loadFeed(token);
+      const response = await fetch(apiUrl(`/books/${encodeURIComponent(bookTitle)}`));
+      if (response.ok) {
+        const data = await response.json();
+        setBookState({ loading: false, error: '', data });
+      }
+    } catch (err) {
+      setBookReviewState({
+        loading: false,
+        error: err.message || 'Unable to add review.',
+        success: false,
+      });
+    }
+  };
+
+  const handleMarkRead = () => {
+    setBookReviewForm((prev) => ({ ...prev, status: 'finished' }));
+  };
+
   const fetchBooklists = async (username) => {
     try {
       const response = await fetch(apiUrl(`/booklists/${username}`));
@@ -746,6 +847,7 @@ const App = () => {
   const statusLabel = authState.authenticated ? 'Online' : 'Signed out';
   const hasConfig = hasKeycloakConfig();
   const isProfileView = Boolean(profileUsername);
+  const isBookView = Boolean(bookTitle);
   const isOwnProfile =
     authState.authenticated &&
     profileUsername &&
@@ -1007,8 +1109,16 @@ const App = () => {
           <section className="content">
             <header className="content-header">
               <div>
-                <p className="label">{isProfileView ? 'Profile' : 'Dashboard'}</p>
-                <h2>{isProfileView ? profileUsername : `Welcome back, ${displayName}`}</h2>
+                <p className="label">
+                  {isBookView ? 'Book' : isProfileView ? 'Profile' : 'Dashboard'}
+                </p>
+                <h2>
+                  {isBookView
+                    ? bookTitle
+                    : isProfileView
+                      ? profileUsername
+                      : `Welcome back, ${displayName}`}
+                </h2>
               </div>
               <div className="content-actions">
                 <label className="field search-field">
@@ -1021,7 +1131,7 @@ const App = () => {
                     aria-label="Search books"
                   />
                 </label>
-                {!isProfileView && (
+                {!isProfileView && !isBookView && (
                   <>
                     <button className="ghost" type="button" onClick={() => openReviewForm({ status: 'finished' })}>
                       Read book
@@ -1031,13 +1141,124 @@ const App = () => {
                     </button>
                   </>
                 )}
-                <button className="ghost" type="button" onClick={handleFindBooks}>
-                  Refresh feed
-                </button>
+                {!isBookView && (
+                  <button className="ghost" type="button" onClick={handleFindBooks}>
+                    Refresh feed
+                  </button>
+                )}
               </div>
             </header>
 
-            {isProfileView ? (
+            {isBookView ? (
+              <section className="panel stack">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Book</p>
+                    <h3>{bookTitle}</h3>
+                  </div>
+                  <button className="ghost" type="button" onClick={() => navigate(DASHBOARD_PATH)}>
+                    Back to dashboard
+                  </button>
+                </header>
+                {bookState.loading ? (
+                  <p className="empty-state">Loading book…</p>
+                ) : bookState.error ? (
+                  <p className="empty-state">{bookState.error}</p>
+                ) : (
+                  <>
+                    <div className="book-actions">
+                      <button className="ghost" type="button" onClick={handleMarkRead}>
+                        Read book
+                      </button>
+                    </div>
+                    <form className="form" onSubmit={handleBookReviewSubmit}>
+                      <label className="field">
+                        <span className="meta">Your rating</span>
+                        <input
+                          name="rating"
+                          type="number"
+                          min="1"
+                          max="5"
+                          step="0.5"
+                          value={bookReviewForm.rating}
+                          onChange={handleBookReviewChange}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Your comment</span>
+                        <textarea
+                          name="review"
+                          rows={4}
+                          value={bookReviewForm.review}
+                          onChange={handleBookReviewChange}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Genre</span>
+                        <input
+                          name="genre"
+                          value={bookReviewForm.genre}
+                          onChange={handleBookReviewChange}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Status</span>
+                        <select
+                          name="status"
+                          value={bookReviewForm.status}
+                          onChange={handleBookReviewChange}
+                        >
+                          <option value="review">Reviewed</option>
+                          <option value="finished">Finished</option>
+                          <option value="currently_reading">Currently reading</option>
+                          <option value="want_to_read">Want to read</option>
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span className="meta">Cover URL</span>
+                        <input
+                          name="coverUrl"
+                          value={bookReviewForm.coverUrl}
+                          onChange={handleBookReviewChange}
+                          placeholder="https://..."
+                        />
+                      </label>
+                      {bookReviewState.error && <p className="empty-state">{bookReviewState.error}</p>}
+                      {bookReviewState.success && <p className="empty-state">Review added.</p>}
+                      <button className="primary" type="submit" disabled={bookReviewState.loading}>
+                        {bookReviewState.loading ? 'Saving...' : 'Post review'}
+                      </button>
+                    </form>
+                    <div className="book-reviews">
+                      <p className="label">Community reviews</p>
+                      {Array.isArray(bookState.data?.reviews) && bookState.data.reviews.length > 0 ? (
+                        <ul className="queue-list">
+                          {bookState.data.reviews.map((review) => (
+                            <li key={review.id || review._id}>
+                              <div>
+                                <p className="title">{review.user}</p>
+                                <p className="meta">
+                                  {typeof review.rating === 'number'
+                                    ? `${review.rating.toFixed(1)}★`
+                                    : 'No rating'}
+                                </p>
+                                <p className="meta">{review.review}</p>
+                              </div>
+                              <span className="meta">{formatRefreshTime(review.created_at)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="empty-state">No reviews yet. Be the first.</p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </section>
+            ) : isProfileView ? (
               <section className="panel stack">
                 <header className="panel-header">
                   <div>
@@ -1419,7 +1640,16 @@ const App = () => {
                             )}
                             <div>
                               <p className="title">
-                                <strong>{item.book}</strong>
+                                <button
+                                  className="link-button"
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    navigate(`/book/${encodeURIComponent(item.book)}`);
+                                  }}
+                                >
+                                  {item.book}
+                                </button>
                               </p>
                               <div className="tags">
                                 {item.user && <span className="tag">{item.user}</span>}
