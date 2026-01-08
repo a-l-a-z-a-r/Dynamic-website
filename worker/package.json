@@ -1,0 +1,14 @@
+{
+  "name": "socialbook-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "RabbitMQ worker for Socialbook events",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9"
+  }
+}
