@@ -13,6 +13,11 @@ export type ReviewPayload = {
   coverUrl?: string;
 };
 
+export type CommentPayload = {
+  user: string;
+  message: string;
+};
+
 @Injectable()
 export class ReviewsService {
   constructor(@InjectModel(Review.name) private reviewModel: Model<ReviewDocument>) {}
@@ -61,6 +66,19 @@ export class ReviewsService {
     });
 
     return created.toObject();
+  }
+
+  async addComment(reviewId: string, payload: CommentPayload) {
+    const comment = {
+      user: payload.user,
+      message: payload.message,
+      created_at: new Date(),
+    };
+    const updated = await this.reviewModel
+      .findByIdAndUpdate(reviewId, { $push: { comments: comment } }, { new: true })
+      .lean()
+      .exec();
+    return updated;
   }
 
   private async checkCoverHead(url: string, minBytes: number, minDimension: number) {

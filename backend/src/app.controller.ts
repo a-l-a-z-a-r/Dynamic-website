@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AppService } from './app.service';
@@ -31,6 +32,10 @@ type LoginPayload = {
 type ImportPayload = {
   query: string;
   source?: string;
+};
+
+type CommentPayload = {
+  message: string;
 };
 
 @Controller()
@@ -74,6 +79,28 @@ export class AppController {
     }
 
     return this.appService.addReview(body);
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Post('reviews/:reviewId/comments')
+  async addReviewComment(
+    @Param('reviewId') reviewId: string,
+    @Body() body: CommentPayload,
+    @Req() req: { user?: Record<string, unknown> },
+  ) {
+    const ownerId =
+      (req.user?.preferred_username as string) || (req.user?.username as string);
+    if (!ownerId) {
+      throw new HttpException({ error: 'Missing owner' }, HttpStatus.FORBIDDEN);
+    }
+    if (!reviewId || !body?.message) {
+      throw new HttpException({ error: 'Missing comment' }, HttpStatus.BAD_REQUEST);
+    }
+    const updated = await this.appService.addReviewComment(reviewId, ownerId, body.message);
+    if (!updated) {
+      throw new HttpException({ error: 'Review not found' }, HttpStatus.NOT_FOUND);
+    }
+    return updated;
   }
 
   @UseGuards(KeycloakAuthGuard)
@@ -133,6 +160,16 @@ export class AppController {
       const message = (err as Error)?.message || 'Failed to load profile';
       throw new HttpException({ error: message }, status);
     }
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Get('users')
+  async searchUsers(@Query('search') search?: string) {
+    if (!search) {
+      return { users: [] };
+    }
+    const users = await this.keycloakAdminService.searchUsers(search);
+    return { users };
   }
 
   @Post('login')

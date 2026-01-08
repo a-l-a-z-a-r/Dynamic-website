@@ -96,14 +96,18 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
   private async startConsumers() {
     if (!this.channel) return;
-    await this.channel.consume(this.queues.notifications, (msg) =>
+    await this.channel.consume(this.queues.notifications, (msg: ConsumeMessage | null) =>
       this.handleMessage(msg, 'notifications'),
     );
-    await this.channel.consume(this.queues.recommendations, (msg) =>
+    await this.channel.consume(this.queues.recommendations, (msg: ConsumeMessage | null) =>
       this.handleMessage(msg, 'recommendations'),
     );
-    await this.channel.consume(this.queues.imports, (msg) => this.handleMessage(msg, 'imports'));
-    await this.channel.consume(this.queues.fanout, (msg) => this.handleMessage(msg, 'fanout'));
+    await this.channel.consume(this.queues.imports, (msg: ConsumeMessage | null) =>
+      this.handleMessage(msg, 'imports'),
+    );
+    await this.channel.consume(this.queues.fanout, (msg: ConsumeMessage | null) =>
+      this.handleMessage(msg, 'fanout'),
+    );
   }
 
   private handleMessage(message: ConsumeMessage | null, queue: string) {
