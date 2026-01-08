@@ -1633,7 +1633,6 @@ const App = () => {
                         const itemKey = keyFor(item);
                         const isExpanded = expandedItems.has(itemKey);
                         const description = getBookDescription(item);
-                        const bookUrl = item.book ? `/book/${encodeURIComponent(item.book)}` : '';
                         return (
                           <li
                             key={itemKey}
@@ -1665,21 +1664,16 @@ const App = () => {
                             )}
                             <div>
                               <p className="title">
-                                {bookUrl ? (
-                                  <a
-                                    className="link-button"
-                                    href={bookUrl}
-                                    onClick={(event) => {
-                                      event.preventDefault();
-                                      event.stopPropagation();
-                                      navigate(bookUrl);
-                                    }}
-                                  >
-                                    {item.book}
-                                  </a>
-                                ) : (
-                                  <span>{item.book}</span>
-                                )}
+                                <button
+                                  className="link-button"
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    navigate(`/book/${encodeURIComponent(item.book)}`);
+                                  }}
+                                >
+                                  {item.book}
+                                </button>
                               </p>
                               <div className="tags">
                                 {item.user && <span className="tag">{item.user}</span>}
