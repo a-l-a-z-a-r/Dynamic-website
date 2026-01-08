@@ -1,17 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap');
 
 :root {
-  --bg: #0c1110;
-  --bg-elevated: #121918;
-  --panel: #161f1d;
-  --panel-soft: #1a2522;
-  --text: #f4f6f5;
-  --muted: #a4b3ac;
+  --bg: #0b0b0b;
+  --bg-elevated: #111111;
+  --panel: #141414;
+  --panel-soft: #1a1a1a;
+  --text: #f1f1f1;
+  --muted: #a6a6a6;
   --accent: #1ed760;
   --accent-strong: #1db954;
   --accent-soft: rgba(30, 215, 96, 0.2);
-  --border: rgba(244, 246, 245, 0.08);
-  --shadow: 0 24px 50px rgba(3, 6, 5, 0.45);
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
   --radius: 18px;
   --font: 'Space Grotesk', 'Segoe UI', sans-serif;
   --display: 'Sora', 'Segoe UI', sans-serif;
@@ -22,8 +22,8 @@
 body {
   margin: 0;
   font-family: var(--font);
-  background: radial-gradient(circle at top left, rgba(30, 215, 96, 0.1), transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 200, 87, 0.12), transparent 45%),
+  background: radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.04), transparent 55%),
+    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.02), transparent 50%),
     var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -36,7 +36,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: linear-gradient(140deg, rgba(5, 10, 9, 0.2), rgba(15, 22, 20, 0.75));
+  background: linear-gradient(140deg, rgba(0, 0, 0, 0.25), rgba(18, 18, 18, 0.85));
   z-index: -2;
 }
 
