@@ -83,16 +83,6 @@ const App = () => {
   });
   const [profileImageForm, setProfileImageForm] = useState('');
   const [profileImageState, setProfileImageState] = useState({ loading: false, error: '', success: false });
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [reviewForm, setReviewForm] = useState({
-    book: '',
-    rating: '',
-    review: '',
-    genre: '',
-    status: 'review',
-    coverUrl: '',
-  });
-  const [reviewState, setReviewState] = useState({ loading: false, error: '', success: false });
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentState, setCommentState] = useState({ loading: false, error: '' });
   const [searchResults, setSearchResults] = useState({ booklists: [], users: [] });
@@ -488,74 +478,6 @@ const App = () => {
     }
   };
 
-  const handleReviewChange = (event) => {
-    const { name, value } = event.target;
-    setReviewForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const openReviewForm = (overrides = {}) => {
-    const baseForm = {
-      book: '',
-      rating: '',
-      review: '',
-      genre: '',
-      status: 'review',
-      coverUrl: '',
-    };
-    setReviewForm({ ...baseForm, ...overrides });
-    setReviewState({ loading: false, error: '', success: false });
-    setShowReviewForm(true);
-  };
-
-  const handleCreateReview = async (event) => {
-    event.preventDefault();
-    const token = getActiveToken();
-    const owner =
-      profile?.username ||
-      profile?.preferred_username ||
-      profileState.data?.username ||
-      profileState.data?.preferred_username;
-    if (!token || !owner) {
-      setAuthError('Sign in to create a review.');
-      return;
-    }
-    setReviewState({ loading: true, error: '', success: false });
-    try {
-      const payload = {
-        user: owner,
-        book: reviewForm.book.trim(),
-        rating: Number(reviewForm.rating),
-        review: reviewForm.review.trim(),
-        genre: reviewForm.genre.trim(),
-        status: reviewForm.status,
-        coverUrl: reviewForm.coverUrl?.trim() || undefined,
-      };
-      if (!payload.book || !payload.review || !payload.genre) {
-        throw new Error('Book, genre, and review are required.');
-      }
-      if (!Number.isFinite(payload.rating) || payload.rating < 1 || payload.rating > 5) {
-        throw new Error('Rating must be between 1 and 5.');
-      }
-      await authFetch('/reviews', token, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      setReviewForm({
-        book: '',
-        rating: '',
-        review: '',
-        genre: '',
-        status: 'review',
-        coverUrl: '',
-      });
-      setReviewState({ loading: false, error: '', success: true });
-      setShowReviewForm(false);
-      loadFeed(token);
-    } catch (err) {
-      setReviewState({ loading: false, error: err.message || 'Failed to create review.', success: false });
-    }
-  };
 
   const handleCommentChange = (reviewId, value) => {
     if (!reviewId) return;
@@ -648,6 +570,10 @@ const App = () => {
   const handleBookReviewChange = (event) => {
     const { name, value } = event.target;
     setBookReviewForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleBookRating = (value) => {
+    setBookReviewForm((prev) => ({ ...prev, rating: value }));
   };
 
   const handleBookReviewSubmit = async (event) => {
@@ -1131,16 +1057,6 @@ const App = () => {
                     aria-label="Search books"
                   />
                 </label>
-                {!isProfileView && !isBookView && (
-                  <>
-                    <button className="ghost" type="button" onClick={() => openReviewForm({ status: 'finished' })}>
-                      Read book
-                    </button>
-                    <button className="primary" type="button" onClick={() => openReviewForm()}>
-                      Add review
-                    </button>
-                  </>
-                )}
                 {!isBookView && (
                   <button className="ghost" type="button" onClick={handleFindBooks}>
                     Refresh feed
@@ -1174,16 +1090,19 @@ const App = () => {
                     <form className="form" onSubmit={handleBookReviewSubmit}>
                       <label className="field">
                         <span className="meta">Your rating</span>
-                        <input
-                          name="rating"
-                          type="number"
-                          min="1"
-                          max="5"
-                          step="0.5"
-                          value={bookReviewForm.rating}
-                          onChange={handleBookReviewChange}
-                          required
-                        />
+                        <div className="star-rating">
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              className={`star ${Number(bookReviewForm.rating) >= value ? 'selected' : ''}`}
+                              onClick={() => handleBookRating(value)}
+                              aria-label={`Rate ${value} star`}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
                       </label>
                       <label className="field">
                         <span className="meta">Your comment</span>
@@ -1393,84 +1312,6 @@ const App = () => {
                   </section>
                 )}
 
-                {showReviewForm && (
-                  <section className="panel stack">
-                    <header className="panel-header">
-                      <div>
-                        <p className="label">New review</p>
-                        <h3>Add a review</h3>
-                      </div>
-                      <button className="ghost" type="button" onClick={() => setShowReviewForm(false)}>
-                        Close
-                      </button>
-                    </header>
-                    <form className="form" onSubmit={handleCreateReview}>
-                      <label className="field">
-                        <span className="meta">Book</span>
-                        <input
-                          name="book"
-                          value={reviewForm.book}
-                          onChange={handleReviewChange}
-                          required
-                        />
-                      </label>
-                      <label className="field">
-                        <span className="meta">Genre</span>
-                        <input
-                          name="genre"
-                          value={reviewForm.genre}
-                          onChange={handleReviewChange}
-                          required
-                        />
-                      </label>
-                      <label className="field">
-                        <span className="meta">Rating</span>
-                        <input
-                          name="rating"
-                          type="number"
-                          min="1"
-                          max="5"
-                          step="0.5"
-                          value={reviewForm.rating}
-                          onChange={handleReviewChange}
-                          required
-                        />
-                      </label>
-                      <label className="field">
-                        <span className="meta">Status</span>
-                        <select name="status" value={reviewForm.status} onChange={handleReviewChange}>
-                          <option value="review">Reviewed</option>
-                          <option value="finished">Finished</option>
-                          <option value="currently_reading">Currently reading</option>
-                          <option value="want_to_read">Want to read</option>
-                        </select>
-                      </label>
-                      <label className="field">
-                        <span className="meta">Review</span>
-                        <textarea
-                          name="review"
-                          value={reviewForm.review}
-                          onChange={handleReviewChange}
-                          rows={4}
-                          required
-                        />
-                      </label>
-                      <label className="field">
-                        <span className="meta">Cover URL</span>
-                        <input
-                          name="coverUrl"
-                          value={reviewForm.coverUrl}
-                          onChange={handleReviewChange}
-                          placeholder="https://..."
-                        />
-                      </label>
-                      {reviewState.error && <p className="empty-state">{reviewState.error}</p>}
-                      <button className="primary" type="submit" disabled={reviewState.loading}>
-                        {reviewState.loading ? 'Saving...' : 'Publish review'}
-                      </button>
-                    </form>
-                  </section>
-                )}
 
                 {normalizedQuery && (
                   <section className="panel stack">
@@ -1695,26 +1536,6 @@ const App = () => {
                                     disabled={booklistActionState.loading}
                                   >
                                     Add to {activeBooklist?.name || 'list'}
-                                  </button>
-                                  <button
-                                    className="ghost small"
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      openReviewForm({ book: item.book, status: 'review' });
-                                    }}
-                                  >
-                                    Review this
-                                  </button>
-                                  <button
-                                    className="ghost small"
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      openReviewForm({ book: item.book, status: 'finished' });
-                                    }}
-                                  >
-                                    Mark as read
                                   </button>
                                 </div>
                                 <div className="comment-form">

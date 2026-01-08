@@ -29,10 +29,12 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     recommendations: 'socialbook.recommendations',
     imports: 'socialbook.imports',
     fanout: 'socialbook.feed-fanout',
+    comments: 'socialbook.comments',
   };
   private readonly routingKeys = {
     reviewCreated: 'review.created',
     importRequested: 'import.requested',
+    commentCreated: 'review.commented',
   };
 
   private getRabbitUrl() {
@@ -64,6 +66,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     return this.publish(this.routingKeys.reviewCreated, payload);
   }
 
+  async publishReviewCommented(payload: Record<string, unknown>) {
+    return this.publish(this.routingKeys.commentCreated, payload);
+  }
+
   async enqueueImport(payload: ImportRequestedPayload) {
     return this.publish(this.routingKeys.importRequested, payload);
   }
@@ -79,10 +85,12 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     await this.channel.assertQueue(this.queues.recommendations, { durable: true });
     await this.channel.assertQueue(this.queues.imports, { durable: true });
     await this.channel.assertQueue(this.queues.fanout, { durable: true });
+    await this.channel.assertQueue(this.queues.comments, { durable: true });
     await this.channel.bindQueue(this.queues.notifications, this.exchange, this.routingKeys.reviewCreated);
     await this.channel.bindQueue(this.queues.recommendations, this.exchange, this.routingKeys.reviewCreated);
     await this.channel.bindQueue(this.queues.fanout, this.exchange, this.routingKeys.reviewCreated);
     await this.channel.bindQueue(this.queues.imports, this.exchange, this.routingKeys.importRequested);
+    await this.channel.bindQueue(this.queues.comments, this.exchange, this.routingKeys.commentCreated);
   }
 
   private async publish(routingKey: string, payload: Record<string, unknown>) {
@@ -107,6 +115,9 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     );
     await this.channel.consume(this.queues.fanout, (msg: ConsumeMessage | null) =>
       this.handleMessage(msg, 'fanout'),
+    );
+    await this.channel.consume(this.queues.comments, (msg: ConsumeMessage | null) =>
+      this.handleMessage(msg, 'comments'),
     );
   }
 
