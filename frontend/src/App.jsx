@@ -516,7 +516,7 @@ const App = () => {
       return;
     }
     const token = getActiveToken();
-    const message = (commentDrafts[resolvedId] || '').trim();
+    const message = (commentDrafts[resolvedId] || commentDrafts[fallbackKey] || '').trim();
     if (!token) {
       setCommentState({ loading: false, error: 'Sign in to comment.' });
       return;
@@ -532,7 +532,7 @@ const App = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
       });
-      setCommentDrafts((prev) => ({ ...prev, [resolvedId]: '' }));
+      setCommentDrafts((prev) => ({ ...prev, [resolvedId]: '', [fallbackKey]: '' }));
       setCommentState({ loading: false, error: '' });
       loadFeed(token);
     } catch (err) {
@@ -816,6 +816,15 @@ const App = () => {
     : feed;
   const filteredBooklists = normalizedQuery ? searchResults.booklists : [];
   const filteredUsers = normalizedQuery ? searchResults.users : [];
+  const filteredBooks = normalizedQuery
+    ? Array.from(
+        new Set(
+          feed
+            .map((item) => item.book)
+            .filter((book) => book && book.toLowerCase().includes(normalizedQuery)),
+        ),
+      )
+    : [];
 
   return (
     <>
@@ -1354,6 +1363,29 @@ const App = () => {
                     ) : (
                       <div className="search-results">
                         <div>
+                          <p className="detail-label">Books</p>
+                          {filteredBooks.length === 0 ? (
+                            <p className="empty-state">No matching books.</p>
+                          ) : (
+                            <ul className="queue-list">
+                              {filteredBooks.map((book) => (
+                                <li key={book}>
+                                  <div>
+                                    <p className="title">{book}</p>
+                                  </div>
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={() => navigate(`/book/${encodeURIComponent(book)}`)}
+                                  >
+                                    View
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                        <div>
                           <p className="detail-label">Booklists</p>
                           {filteredBooklists.length === 0 ? (
                             <p className="empty-state">No public lists found.</p>
@@ -1525,10 +1557,6 @@ const App = () => {
                                 {item.rating && <span className="tag muted">{item.rating.toFixed(1)}★</span>}
                               </div>
                               <div className="book-details">
-                                <div>
-                                  <p className="detail-label">Summary</p>
-                                  <p className="detail-text">{description}</p>
-                                </div>
                                 {item.review && (
                                   <div>
                                     <p className="detail-label">Review</p>
