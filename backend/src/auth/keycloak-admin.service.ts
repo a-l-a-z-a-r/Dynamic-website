@@ -101,6 +101,38 @@ export class KeycloakAdminService {
     return users[0];
   }
 
+  async searchUsers(search: string) {
+    this.loadConfig();
+    const token = await this.fetchAdminToken();
+    const { url, realm } = this.config!;
+    const endpoint = new URL(`${url}/admin/realms/${realm}/users`);
+    endpoint.searchParams.set('search', search);
+
+    const result = await this.request('GET', endpoint, {
+      Authorization: `Bearer ${token}`,
+    });
+
+    if (result.status < 200 || result.status >= 300) {
+      const detail = result.body || 'Failed to search users';
+      const error = new Error(detail);
+      (error as any).status = result.status;
+      throw error;
+    }
+
+    const users = JSON.parse(result.body || '[]');
+    if (!Array.isArray(users)) {
+      return [];
+    }
+
+    return users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+    }));
+  }
+
   private async fetchAdminToken() {
     const { clientId, clientSecret } = this.config!;
     const params = new URLSearchParams({

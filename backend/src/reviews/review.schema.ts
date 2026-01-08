@@ -1,6 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
+export type ReviewComment = {
+  user: string;
+  message: string;
+  created_at: Date;
+};
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: false } })
 export class Review {
   @Prop({ required: true })
@@ -23,6 +29,18 @@ export class Review {
 
   @Prop()
   coverUrl?: string;
+
+  @Prop({
+    type: [
+      {
+        user: { type: String, required: true },
+        message: { type: String, required: true },
+        created_at: { type: Date, required: true },
+      },
+    ],
+    default: [],
+  })
+  comments?: ReviewComment[];
 
   // Added for typings; created automatically by timestamps
   created_at?: Date;

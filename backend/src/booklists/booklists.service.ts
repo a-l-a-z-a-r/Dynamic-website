@@ -40,6 +40,20 @@ export class BooklistsService {
     return this.booklistModel.find({ ownerId }).sort({ updatedAt: -1 }).lean();
   }
 
+  async searchPublicLists(query: string, limit = 12) {
+    const normalized = query.trim();
+    if (!normalized) return [];
+    const regex = new RegExp(normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    return this.booklistModel
+      .find({
+        visibility: 'public',
+        $or: [{ name: regex }, { description: regex }, { ownerId: regex }],
+      })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .lean();
+  }
+
   async addItem(booklistId: string, addedById: string, payload: AddBooklistItemPayload) {
     const item = await this.itemModel.create({
       booklistId,

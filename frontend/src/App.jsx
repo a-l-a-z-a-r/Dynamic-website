@@ -9,7 +9,8 @@ const apiUrl = (path) => {
 };
 
 const DASHBOARD_PATH = '/dashboard';
-const keyFor = (item) => `${item.user ?? 'anon'}-${item.book ?? 'untitled'}-${item.created_at ?? ''}`;
+const keyFor = (item) =>
+  item.id || item._id || `${item.user ?? 'anon'}-${item.book ?? 'untitled'}-${item.created_at ?? ''}`;
 
 const authFetch = async (path, token, options = {}) => {
   if (!token) {
@@ -81,6 +82,20 @@ const App = () => {
     description: '',
     visibility: 'public',
   });
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    book: '',
+    rating: '',
+    review: '',
+    genre: '',
+    status: 'review',
+    coverUrl: '',
+  });
+  const [reviewState, setReviewState] = useState({ loading: false, error: '', success: false });
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const [commentState, setCommentState] = useState({ loading: false, error: '' });
+  const [searchResults, setSearchResults] = useState({ booklists: [], users: [] });
+  const [searchState, setSearchState] = useState({ loading: false, error: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItems, setExpandedItems] = useState(() => new Set());
 
@@ -263,6 +278,45 @@ const App = () => {
     fetchBooklistItems(activeBooklistId);
   }, [activeBooklistId]);
 
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query) {
+      setSearchResults({ booklists: [], users: [] });
+      setSearchState({ loading: false, error: '' });
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      setSearchState({ loading: true, error: '' });
+      try {
+        const booklistsPromise = fetch(apiUrl(`/booklists?search=${encodeURIComponent(query)}`))
+          .then((response) => (response.ok ? response.json() : { booklists: [] }))
+          .then((data) => (Array.isArray(data?.booklists) ? data.booklists : []));
+
+        const token = getActiveToken();
+        const usersPromise = token
+          ? authFetch(`/users?search=${encodeURIComponent(query)}`, token).then((data) =>
+              Array.isArray(data?.users) ? data.users : [],
+            )
+          : Promise.resolve([]);
+
+        const [booklists, users] = await Promise.all([booklistsPromise, usersPromise]);
+        if (!active) return;
+        setSearchResults({ booklists, users });
+        setSearchState({ loading: false, error: '' });
+      } catch (err) {
+        if (!active) return;
+        setSearchState({ loading: false, error: err.message || 'Search failed.' });
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
+
   const loadFeed = async (tokenOverride) => {
     try {
       const keycloak = getKeycloak();
@@ -381,13 +435,121 @@ const App = () => {
         body: JSON.stringify(booklistForm),
       });
       setBooklistForm({ name: '', description: '', visibility: 'public' });
-      const owner = profile?.username || profileState.data?.username;
+      const owner =
+        profile?.username ||
+        profile?.preferred_username ||
+        profileState.data?.username ||
+        profileState.data?.preferred_username;
       if (owner) {
         fetchBooklists(owner);
       }
       setShowBooklistForm(false);
     } catch (err) {
       setAuthError(err.message || 'Failed to create booklist.');
+    }
+  };
+
+  const handleReviewChange = (event) => {
+    const { name, value } = event.target;
+    setReviewForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const openReviewForm = (overrides = {}) => {
+    const baseForm = {
+      book: '',
+      rating: '',
+      review: '',
+      genre: '',
+      status: 'review',
+      coverUrl: '',
+    };
+    setReviewForm({ ...baseForm, ...overrides });
+    setReviewState({ loading: false, error: '', success: false });
+    setShowReviewForm(true);
+  };
+
+  const handleCreateReview = async (event) => {
+    event.preventDefault();
+    const token = getActiveToken();
+    const owner =
+      profile?.username ||
+      profile?.preferred_username ||
+      profileState.data?.username ||
+      profileState.data?.preferred_username;
+    if (!token || !owner) {
+      setAuthError('Sign in to create a review.');
+      return;
+    }
+    setReviewState({ loading: true, error: '', success: false });
+    try {
+      const payload = {
+        user: owner,
+        book: reviewForm.book.trim(),
+        rating: Number(reviewForm.rating),
+        review: reviewForm.review.trim(),
+        genre: reviewForm.genre.trim(),
+        status: reviewForm.status,
+        coverUrl: reviewForm.coverUrl?.trim() || undefined,
+      };
+      if (!payload.book || !payload.review || !payload.genre) {
+        throw new Error('Book, genre, and review are required.');
+      }
+      if (!Number.isFinite(payload.rating) || payload.rating < 1 || payload.rating > 5) {
+        throw new Error('Rating must be between 1 and 5.');
+      }
+      await authFetch('/reviews', token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setReviewForm({
+        book: '',
+        rating: '',
+        review: '',
+        genre: '',
+        status: 'review',
+        coverUrl: '',
+      });
+      setReviewState({ loading: false, error: '', success: true });
+      setShowReviewForm(false);
+      loadFeed(token);
+    } catch (err) {
+      setReviewState({ loading: false, error: err.message || 'Failed to create review.', success: false });
+    }
+  };
+
+  const handleCommentChange = (reviewId, value) => {
+    if (!reviewId) return;
+    setCommentDrafts((prev) => ({ ...prev, [reviewId]: value }));
+  };
+
+  const handleSubmitComment = async (reviewId) => {
+    if (!reviewId) {
+      setCommentState({ loading: false, error: 'Missing review to comment on.' });
+      return;
+    }
+    const token = getActiveToken();
+    const message = (commentDrafts[reviewId] || '').trim();
+    if (!token) {
+      setCommentState({ loading: false, error: 'Sign in to comment.' });
+      return;
+    }
+    if (!message) {
+      setCommentState({ loading: false, error: 'Write a comment first.' });
+      return;
+    }
+    setCommentState({ loading: true, error: '' });
+    try {
+      await authFetch(`/reviews/${reviewId}/comments`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      setCommentDrafts((prev) => ({ ...prev, [reviewId]: '' }));
+      setCommentState({ loading: false, error: '' });
+      loadFeed(token);
+    } catch (err) {
+      setCommentState({ loading: false, error: err.message || 'Unable to add comment.' });
     }
   };
 
@@ -461,7 +623,11 @@ const App = () => {
         body: JSON.stringify({ bookId: bookTitle }),
       });
       fetchBooklistItems(activeBooklistId);
-      const owner = profile?.username || profileState.data?.username;
+      const owner =
+        profile?.username ||
+        profile?.preferred_username ||
+        profileState.data?.username ||
+        profileState.data?.preferred_username;
       if (owner) {
         fetchBooklists(owner);
       }
@@ -555,6 +721,8 @@ const App = () => {
         return book.includes(normalizedQuery) || user.includes(normalizedQuery) || status.includes(normalizedQuery);
       })
     : feed;
+  const filteredBooklists = normalizedQuery ? searchResults.booklists : [];
+  const filteredUsers = normalizedQuery ? searchResults.users : [];
 
   return (
     <>
@@ -811,14 +979,24 @@ const App = () => {
                   <span className="meta">Search</span>
                   <input
                     type="search"
-                    placeholder="Search books or readers"
+                    placeholder="Search books, lists, or readers"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     aria-label="Search books"
                   />
                 </label>
-                <button className="primary" type="button" onClick={handleFindBooks}>
-                  Find books
+                {!isProfileView && (
+                  <>
+                    <button className="ghost" type="button" onClick={() => openReviewForm({ status: 'finished' })}>
+                      Read book
+                    </button>
+                    <button className="primary" type="button" onClick={() => openReviewForm()}>
+                      Add review
+                    </button>
+                  </>
+                )}
+                <button className="ghost" type="button" onClick={handleFindBooks}>
+                  Refresh feed
                 </button>
               </div>
             </header>
@@ -934,6 +1112,154 @@ const App = () => {
                   </section>
                 )}
 
+                {showReviewForm && (
+                  <section className="panel stack">
+                    <header className="panel-header">
+                      <div>
+                        <p className="label">New review</p>
+                        <h3>Add a review</h3>
+                      </div>
+                      <button className="ghost" type="button" onClick={() => setShowReviewForm(false)}>
+                        Close
+                      </button>
+                    </header>
+                    <form className="form" onSubmit={handleCreateReview}>
+                      <label className="field">
+                        <span className="meta">Book</span>
+                        <input
+                          name="book"
+                          value={reviewForm.book}
+                          onChange={handleReviewChange}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Genre</span>
+                        <input
+                          name="genre"
+                          value={reviewForm.genre}
+                          onChange={handleReviewChange}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Rating</span>
+                        <input
+                          name="rating"
+                          type="number"
+                          min="1"
+                          max="5"
+                          step="0.5"
+                          value={reviewForm.rating}
+                          onChange={handleReviewChange}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Status</span>
+                        <select name="status" value={reviewForm.status} onChange={handleReviewChange}>
+                          <option value="review">Reviewed</option>
+                          <option value="finished">Finished</option>
+                          <option value="currently_reading">Currently reading</option>
+                          <option value="want_to_read">Want to read</option>
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span className="meta">Review</span>
+                        <textarea
+                          name="review"
+                          value={reviewForm.review}
+                          onChange={handleReviewChange}
+                          rows={4}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="meta">Cover URL</span>
+                        <input
+                          name="coverUrl"
+                          value={reviewForm.coverUrl}
+                          onChange={handleReviewChange}
+                          placeholder="https://..."
+                        />
+                      </label>
+                      {reviewState.error && <p className="empty-state">{reviewState.error}</p>}
+                      <button className="primary" type="submit" disabled={reviewState.loading}>
+                        {reviewState.loading ? 'Saving...' : 'Publish review'}
+                      </button>
+                    </form>
+                  </section>
+                )}
+
+                {normalizedQuery && (
+                  <section className="panel stack">
+                    <header className="panel-header">
+                      <div>
+                        <p className="label">Search</p>
+                        <h3>Results for "{searchQuery.trim()}"</h3>
+                      </div>
+                    </header>
+                    {searchState.loading ? (
+                      <p className="empty-state">Searching…</p>
+                    ) : searchState.error ? (
+                      <p className="empty-state">{searchState.error}</p>
+                    ) : (
+                      <div className="search-results">
+                        <div>
+                          <p className="detail-label">Booklists</p>
+                          {filteredBooklists.length === 0 ? (
+                            <p className="empty-state">No public lists found.</p>
+                          ) : (
+                            <ul className="queue-list">
+                              {filteredBooklists.map((list) => (
+                                <li key={list._id}>
+                                  <div>
+                                    <p className="title">{list.name}</p>
+                                    <p className="meta">{list.description || 'No description'}</p>
+                                  </div>
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={() => navigate(`/profile/${list.ownerId}`)}
+                                  >
+                                    {list.ownerId}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                        <div>
+                          <p className="detail-label">Readers</p>
+                          {filteredUsers.length === 0 ? (
+                            <p className="empty-state">No matching readers.</p>
+                          ) : (
+                            <ul className="queue-list">
+                              {filteredUsers.map((user) => (
+                                <li key={user.id || user.username}>
+                                  <div>
+                                    <p className="title">{user.username}</p>
+                                    <p className="meta">
+                                      {[user.firstName, user.lastName].filter(Boolean).join(' ') || '—'}
+                                    </p>
+                                  </div>
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={() => navigate(`/profile/${user.username}`)}
+                                  >
+                                    View
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
                 <section className="panel stack">
                   <header className="panel-header">
                     <div>
@@ -989,6 +1315,7 @@ const App = () => {
                     </div>
                   </header>
                   {authError && <p className="empty-state">{authError}</p>}
+                  {commentState.error && <p className="empty-state">{commentState.error}</p>}
                   {feed.length === 0 ? (
                     <p className="empty-state">No reviews yet.</p>
                   ) : filteredFeed.length === 0 ? (
@@ -999,6 +1326,8 @@ const App = () => {
                         const itemKey = keyFor(item);
                         const isExpanded = expandedItems.has(itemKey);
                         const description = getBookDescription(item);
+                        const reviewId = item.id || item._id;
+                        const commentValue = reviewId ? commentDrafts[reviewId] || '' : '';
                         return (
                           <li
                             key={itemKey}
@@ -1048,17 +1377,80 @@ const App = () => {
                                     <p className="detail-text">{item.review}</p>
                                   </div>
                                 )}
-                                <button
-                                  className="ghost small"
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleAddToBooklist(item.book);
-                                  }}
-                                  disabled={booklistActionState.loading}
-                                >
-                                  Add to {activeBooklist?.name || 'list'}
-                                </button>
+                                {Array.isArray(item.comments) && item.comments.length > 0 && (
+                                  <div>
+                                    <p className="detail-label">Comments</p>
+                                    <ul className="comment-list">
+                                      {item.comments.map((comment, index) => (
+                                        <li key={`${reviewId || itemKey}-comment-${index}`}>
+                                          <p className="detail-text">
+                                            <strong>{comment.user}:</strong> {comment.message}
+                                          </p>
+                                          <span className="meta">
+                                            {formatRefreshTime(comment.created_at)}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                <div className="button-row">
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleAddToBooklist(item.book);
+                                    }}
+                                    disabled={booklistActionState.loading}
+                                  >
+                                    Add to {activeBooklist?.name || 'list'}
+                                  </button>
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openReviewForm({ book: item.book, status: 'review' });
+                                    }}
+                                  >
+                                    Review this
+                                  </button>
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openReviewForm({ book: item.book, status: 'finished' });
+                                    }}
+                                  >
+                                    Mark as read
+                                  </button>
+                                </div>
+                                <div className="comment-form">
+                                  <input
+                                    type="text"
+                                    placeholder="Add a comment"
+                                    value={commentValue}
+                                    onChange={(event) => {
+                                      event.stopPropagation();
+                                      handleCommentChange(reviewId, event.target.value);
+                                    }}
+                                    onClick={(event) => event.stopPropagation()}
+                                    disabled={!reviewId}
+                                  />
+                                  <button
+                                    className="ghost small"
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleSubmitComment(reviewId);
+                                    }}
+                                    disabled={!reviewId || commentState.loading}
+                                  >
+                                    Comment
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </li>

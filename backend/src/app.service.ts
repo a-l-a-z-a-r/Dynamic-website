@@ -4,6 +4,7 @@ import { ReviewPayload, ReviewsService } from './reviews/reviews.service';
 import { QueueService } from './queue/queue.service';
 
 type FeedItem = {
+  id?: string;
   user: string;
   action: string;
   book: string;
@@ -12,6 +13,7 @@ type FeedItem = {
   status: string;
   created_at: string;
   coverUrl?: string;
+  comments?: { user: string; message: string; created_at: string }[];
 };
 
 type Shelf = {
@@ -88,6 +90,14 @@ export class AppService {
     return { reviews: reviews.map((review) => this.toResponse(review)) };
   }
 
+  async addReviewComment(reviewId: string, user: string, message: string) {
+    const updated = await this.reviewsService.addComment(reviewId, { user, message });
+    if (!updated) {
+      return null;
+    }
+    return this.toResponse(updated as Review);
+  }
+
   async addReview(payload: ReviewPayload) {
     const created = await this.reviewsService.create(payload);
 
@@ -140,6 +150,7 @@ export class AppService {
 
   private toFeedItem(review: Review): FeedItem {
     return {
+      id: (review as any)._id?.toString?.() ?? undefined,
       user: review.user,
       action: 'reviewed',
       book: review.book,
@@ -148,6 +159,11 @@ export class AppService {
       status: review.status ?? 'review',
       created_at: this.formatCreatedAt(review.created_at),
       coverUrl: review.coverUrl,
+      comments: (review as any).comments?.map((comment: any) => ({
+        user: comment.user,
+        message: comment.message,
+        created_at: this.formatCreatedAt(comment.created_at),
+      })),
     };
   }
 
@@ -161,6 +177,11 @@ export class AppService {
       genre: review.genre,
       created_at: this.formatCreatedAt(review.created_at),
       coverUrl: (review as any).coverUrl,
+      comments: (review as any).comments?.map((comment: any) => ({
+        user: comment.user,
+        message: comment.message,
+        created_at: this.formatCreatedAt(comment.created_at),
+      })),
     };
   }
 

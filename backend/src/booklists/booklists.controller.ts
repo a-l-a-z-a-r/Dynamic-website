@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -33,6 +34,15 @@ type AuthRequest = {
 @Controller()
 export class BooklistsController {
   constructor(private readonly booklistsService: BooklistsService) {}
+
+  @Get('booklists')
+  async searchBooklists(@Query('search') search?: string) {
+    if (!search) {
+      return { booklists: [] };
+    }
+    const lists = await this.booklistsService.searchPublicLists(search);
+    return { booklists: lists };
+  }
 
   @Get('booklists/:ownerId')
   async listBooklists(@Param('ownerId') ownerId: string) {
