@@ -7,9 +7,9 @@
   --panel-soft: #1a1a1a;
   --text: #f1f1f1;
   --muted: #a6a6a6;
-  --accent: #1ed760;
-  --accent-strong: #1db954;
-  --accent-soft: rgba(30, 215, 96, 0.2);
+  --accent: #ff4f9a;
+  --accent-strong: #ff2f86;
+  --accent-soft: rgba(255, 79, 154, 0.2);
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
   --radius: 18px;
