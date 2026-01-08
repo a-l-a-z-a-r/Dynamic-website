@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AppService } from './app.service';
@@ -15,6 +16,7 @@ import { KeycloakAuthGuard } from './auth/keycloak.guard';
 import { KeycloakAdminService } from './auth/keycloak-admin.service';
 import { KeycloakAuthService } from './auth/keycloak-auth.service';
 import { QueueService } from './queue/queue.service';
+import { ProfilesService } from './profiles/profiles.service';
 
 type SignupPayload = {
   username: string;
@@ -38,6 +40,10 @@ type CommentPayload = {
   message: string;
 };
 
+type ProfileImagePayload = {
+  imageUrl: string;
+};
+
 @Controller()
 export class AppController {
   constructor(
@@ -45,6 +51,7 @@ export class AppController {
     private readonly keycloakAdminService: KeycloakAdminService,
     private readonly keycloakAuthService: KeycloakAuthService,
     private readonly queueService: QueueService,
+    private readonly profilesService: ProfilesService,
   ) {}
 
   @UseGuards(KeycloakAuthGuard)
@@ -145,12 +152,14 @@ export class AppController {
         throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND);
       }
 
+      const profile = await this.profilesService.findByUsername(username);
       return {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         attributes: user.attributes || {},
+        imageUrl: profile?.imageUrl,
       };
     } catch (err) {
       if (err instanceof HttpException) {
@@ -160,6 +169,24 @@ export class AppController {
       const message = (err as Error)?.message || 'Failed to load profile';
       throw new HttpException({ error: message }, status);
     }
+  }
+
+  @UseGuards(KeycloakAuthGuard)
+  @Post('profile/image')
+  async updateProfileImage(
+    @Body() body: ProfileImagePayload,
+    @Req() req: { user?: Record<string, unknown> },
+  ) {
+    const ownerId =
+      (req.user?.preferred_username as string) || (req.user?.username as string);
+    if (!ownerId) {
+      throw new HttpException({ error: 'Missing owner' }, HttpStatus.FORBIDDEN);
+    }
+    if (!body?.imageUrl) {
+      throw new HttpException({ error: 'Missing image url' }, HttpStatus.BAD_REQUEST);
+    }
+    const updated = await this.profilesService.upsertImage(ownerId, body.imageUrl);
+    return { ok: true, profile: updated };
   }
 
   @UseGuards(KeycloakAuthGuard)

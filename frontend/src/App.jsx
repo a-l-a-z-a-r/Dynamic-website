@@ -55,7 +55,6 @@ const App = () => {
   const [profile, setProfile] = useState(null);
   const [authError, setAuthError] = useState('');
   const [feed, setFeed] = useState([]);
-  const [lastRefreshed, setLastRefreshed] = useState('');
   const [authView, setAuthView] = useState('signin');
   const [path, setPath] = useState(window.location.pathname);
   const [localToken, setLocalToken] = useState('');
@@ -82,6 +81,8 @@ const App = () => {
     description: '',
     visibility: 'public',
   });
+  const [profileImageForm, setProfileImageForm] = useState('');
+  const [profileImageState, setProfileImageState] = useState({ loading: false, error: '', success: false });
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     book: '',
@@ -329,7 +330,6 @@ const App = () => {
       }
       const feedRes = await authFetch('/feed', token);
       setFeed(feedRes?.feed ?? []);
-      setLastRefreshed(feedRes?.lastRefreshed || new Date().toISOString());
       setAuthError('');
     } catch (err) {
       console.error('Failed to load data', err);
@@ -566,8 +566,43 @@ const App = () => {
       }
       const data = await response.json();
       setProfileState({ loading: false, error: '', data });
+      setProfileImageForm(data?.imageUrl || '');
     } catch (err) {
       setProfileState({ loading: false, error: err.message || 'Failed to load profile.', data: null });
+    }
+  };
+
+  const handleProfileImageChange = (event) => {
+    setProfileImageForm(event.target.value);
+  };
+
+  const handleProfileImageSave = async () => {
+    const token = getActiveToken();
+    if (!token) {
+      setProfileImageState({ loading: false, error: 'Sign in to update your profile image.', success: false });
+      return;
+    }
+    if (!profileImageForm.trim()) {
+      setProfileImageState({ loading: false, error: 'Add an image URL first.', success: false });
+      return;
+    }
+    setProfileImageState({ loading: true, error: '', success: false });
+    try {
+      await authFetch('/profile/image', token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: profileImageForm.trim() }),
+      });
+      setProfileImageState({ loading: false, error: '', success: true });
+      if (profileUsername) {
+        fetchProfile(profileUsername);
+      }
+    } catch (err) {
+      setProfileImageState({
+        loading: false,
+        error: err.message || 'Unable to update profile image.',
+        success: false,
+      });
     }
   };
 
@@ -711,6 +746,10 @@ const App = () => {
   const statusLabel = authState.authenticated ? 'Online' : 'Signed out';
   const hasConfig = hasKeycloakConfig();
   const isProfileView = Boolean(profileUsername);
+  const isOwnProfile =
+    authState.authenticated &&
+    profileUsername &&
+    profileUsername === (profile?.username || profile?.preferred_username);
   const activeBooklist = booklists.find((list) => list._id === activeBooklistId);
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredFeed = normalizedQuery
@@ -970,9 +1009,6 @@ const App = () => {
               <div>
                 <p className="label">{isProfileView ? 'Profile' : 'Dashboard'}</p>
                 <h2>{isProfileView ? profileUsername : `Welcome back, ${displayName}`}</h2>
-                {!isProfileView && (
-                  <p className="meta">Last refreshed {formatRefreshTime(lastRefreshed)}</p>
-                )}
               </div>
               <div className="content-actions">
                 <label className="field search-field">
@@ -1016,6 +1052,15 @@ const App = () => {
                   <p className="empty-state">{profileState.error}</p>
                 ) : (
                   <>
+                    {profileState.data?.imageUrl ? (
+                      <div className="profile-image">
+                        <img src={profileState.data.imageUrl} alt={profileState.data?.username || 'Profile'} />
+                      </div>
+                    ) : (
+                      <div className="profile-image placeholder">
+                        <span>{initials(profileState.data?.username || profileUsername)}</span>
+                      </div>
+                    )}
                     <p className="meta">
                       {profileState.data?.firstName} {profileState.data?.lastName}
                     </p>
@@ -1024,6 +1069,31 @@ const App = () => {
                       <span className="pill">Followers: 0</span>
                       <span className="pill">Following: 0</span>
                     </div>
+                    {isOwnProfile && (
+                      <div className="profile-image-form">
+                        <label className="field">
+                          <span className="meta">Profile image URL</span>
+                          <input
+                            name="profileImage"
+                            value={profileImageForm}
+                            onChange={handleProfileImageChange}
+                            placeholder="https://..."
+                          />
+                        </label>
+                        {profileImageState.error && <p className="empty-state">{profileImageState.error}</p>}
+                        {profileImageState.success && (
+                          <p className="empty-state">Profile image updated.</p>
+                        )}
+                        <button
+                          className="primary"
+                          type="button"
+                          onClick={handleProfileImageSave}
+                          disabled={profileImageState.loading}
+                        >
+                          {profileImageState.loading ? 'Saving...' : 'Save image'}
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </section>
@@ -1050,16 +1120,6 @@ const App = () => {
                       <p className="label">Booklists</p>
                       <h4>{booklists.length}</h4>
                       <p className="meta">Curated collections</p>
-                    </div>
-                    <div>
-                      <p className="label">Feed items</p>
-                      <h4>{feed.length}</h4>
-                      <p className="meta">Fresh activity</p>
-                    </div>
-                    <div>
-                      <p className="label">Active list</p>
-                      <h4>{activeBooklist?.name || 'None yet'}</h4>
-                      <p className="meta">{activeBooklist?.visibility || 'Create one'}</p>
                     </div>
                   </div>
                 </section>
