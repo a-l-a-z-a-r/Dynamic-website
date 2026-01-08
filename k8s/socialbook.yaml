@@ -117,7 +117,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: alazar111/socialbook-frontend:frontend-bd47144
+          image: alazar111/socialbook-frontend:frontend-c1b8170
 
 
 
