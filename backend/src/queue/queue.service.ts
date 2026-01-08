@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import * as amqplib from 'amqplib';
+import amqplib = require('amqplib');
 import { Channel, Connection, ConsumeMessage } from 'amqplib';
 
 type ReviewCreatedPayload = {
