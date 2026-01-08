@@ -22,6 +22,7 @@ import { BooklistsService } from './booklists/booklists.service';
 
 type SignupPayload = {
   username: string;
+  email?: string;
   password: string;
   firstName?: string;
   lastName?: string;
@@ -211,8 +212,8 @@ export class AppController {
 
   @Post('signup')
   async signup(@Body() body: SignupPayload) {
-    const { username, password, firstName, lastName, age } = body || {};
-    if (!username || !password || !firstName || !lastName || !age) {
+    const { username, password, firstName, lastName, age, email } = body || {};
+    if (!username || !password || !firstName || !lastName || !age || !email) {
       throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
     }
 

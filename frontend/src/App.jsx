@@ -63,6 +63,7 @@ const App = () => {
   const [signupState, setSignupState] = useState({ loading: false, error: '', success: false });
   const [signupForm, setSignupForm] = useState({
     username: '',
+    email: '',
     password: '',
     firstName: '',
     lastName: '',
@@ -988,6 +989,17 @@ const App = () => {
                       value={signupForm.username}
                       onChange={handleSignupChange}
                       autoComplete="username"
+                      required
+                    />
+                  </label>
+                  <label className="field">
+                    <span className="meta">Email</span>
+                    <input
+                      name="email"
+                      type="email"
+                      value={signupForm.email}
+                      onChange={handleSignupChange}
+                      autoComplete="email"
                       required
                     />
                   </label>

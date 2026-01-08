@@ -4,6 +4,7 @@ import type { IncomingHttpHeaders } from 'http';
 
 type SignupPayload = {
   username: string;
+  email?: string;
   password: string;
   firstName?: string;
   lastName?: string;
@@ -48,10 +49,11 @@ export class KeycloakAdminService {
 
     const body = JSON.stringify({
       username: payload.username,
+      email: payload.email || undefined,
       firstName: payload.firstName || undefined,
       lastName: payload.lastName || undefined,
       enabled: true,
-      emailVerified: false,
+      emailVerified: Boolean(payload.email),
       attributes: payload.age ? { age: [String(payload.age)] } : undefined,
       credentials: [
         {
