@@ -22,7 +22,7 @@ const KEYCLOAK_ADMIN_CLIENT_SECRET = process.env.KEYCLOAK_ADMIN_CLIENT_SECRET;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const createTransport = () => {
-  if (!SMTP_HOST || !EMAIL_TO) {
+  if (!SMTP_HOST) {
     return null;
   }
   return nodemailer.createTransport({
@@ -97,6 +97,11 @@ const run = async () => {
             const parsed = JSON.parse(payload);
             const targetUser = parsed?.targetUser;
             const email = targetUser ? await fetchUserEmail(targetUser) : null;
+            if (!email && !EMAIL_TO) {
+              console.log('[email-worker] no recipient email; message:', payload);
+              channel.ack(msg);
+              return;
+            }
             await transport.sendMail({
               from: EMAIL_FROM,
               to: email || EMAIL_TO,
