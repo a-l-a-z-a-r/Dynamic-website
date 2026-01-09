@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { getKeycloak } from './keycloak';
-import { hasKeycloakConfig } from './keycloak-config';
+import { hasKeycloakConfig, keycloakConfig } from './keycloak-config';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+const ADMIN_ROLE = 'admin';
 const apiUrl = (path) => {
   const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
   return `${base}${path}`;
@@ -34,6 +35,27 @@ const authFetch = async (path, token, options = {}) => {
   }
 
   return response.json();
+};
+
+const decodeTokenPayload = (token) => {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+  try {
+    const payload = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+};
+
+const getTokenRoles = (token) => {
+  const payload = decodeTokenPayload(token);
+  if (!payload) return [];
+  const realmRoles = payload.realm_access?.roles || [];
+  const clientRoles =
+    payload.resource_access?.[keycloakConfig.clientId]?.roles || [];
+  return Array.from(new Set([...realmRoles, ...clientRoles]));
 };
 
 const getPathname = (value) => {
@@ -160,6 +182,8 @@ const App = () => {
   const [replyState, setReplyState] = useState({ loading: false, error: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItems, setExpandedItems] = useState(() => new Set());
+  const [adminForm, setAdminForm] = useState({ username: '', enabled: true });
+  const [adminState, setAdminState] = useState({ loading: false, error: '', success: '' });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -993,6 +1017,7 @@ const App = () => {
   const hasConfig = hasKeycloakConfig();
   const isProfileView = Boolean(profileUsername);
   const isBookView = Boolean(bookTitle);
+  const isAdminView = path.startsWith('/admin');
   const isOwnProfile =
     authState.authenticated &&
     profileUsername &&
@@ -1018,6 +1043,56 @@ const App = () => {
         ),
       )
     : [];
+  const isAdmin = Boolean(getTokenRoles(getActiveToken()).includes(ADMIN_ROLE));
+  const adminBlocked = isAdminView && !isAdmin;
+
+  const handleAdminChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setAdminForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const submitAdminAction = async (action) => {
+    const token = getActiveToken();
+    if (!token) {
+      setAdminState({ loading: false, error: 'Missing access token.', success: '' });
+      return;
+    }
+    if (!adminForm.username.trim()) {
+      setAdminState({ loading: false, error: 'Username is required.', success: '' });
+      return;
+    }
+
+    setAdminState({ loading: true, error: '', success: '' });
+    try {
+      if (action === 'enable') {
+        await authFetch(`/admin/users/${encodeURIComponent(adminForm.username)}/enabled`, token, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: Boolean(adminForm.enabled) }),
+        });
+        setAdminState({
+          loading: false,
+          error: '',
+          success: `Updated ${adminForm.username}.`,
+        });
+      }
+      if (action === 'delete') {
+        await authFetch(`/admin/users/${encodeURIComponent(adminForm.username)}`, token, {
+          method: 'DELETE',
+        });
+        setAdminState({
+          loading: false,
+          error: '',
+          success: `Deleted ${adminForm.username}.`,
+        });
+      }
+    } catch (err) {
+      setAdminState({ loading: false, error: err.message || 'Admin action failed.', success: '' });
+    }
+  };
 
   return (
     <>
@@ -1224,6 +1299,15 @@ const App = () => {
               >
                 Profile
               </button>
+              {isAdmin && (
+                <button
+                  className={`sidebar-link${isAdminView ? ' active' : ''}`}
+                  type="button"
+                  onClick={() => navigate('/admin')}
+                >
+                  Admin
+                </button>
+              )}
             </nav>
             <div className="sidebar-section">
               <div className="sidebar-section-header">
@@ -1335,7 +1419,68 @@ const App = () => {
               </div>
             </header>
 
-            {isNotificationsView ? (
+            {adminBlocked ? (
+              <section className="panel stack">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Admin</p>
+                    <h3>Access denied</h3>
+                  </div>
+                </header>
+                <p className="empty-state">You need the admin role to manage users.</p>
+              </section>
+            ) : isAdminView ? (
+              <section className="panel stack">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Admin</p>
+                    <h3>User management</h3>
+                  </div>
+                </header>
+                <div className="panel">
+                  <form className="form vertical" onSubmit={(event) => event.preventDefault()}>
+                    <label className="field">
+                      <span className="meta">Username</span>
+                      <input
+                        name="username"
+                        value={adminForm.username}
+                        onChange={handleAdminChange}
+                        placeholder="Username in Keycloak"
+                      />
+                    </label>
+                    <label className="field inline">
+                      <input
+                        type="checkbox"
+                        name="enabled"
+                        checked={adminForm.enabled}
+                        onChange={handleAdminChange}
+                      />
+                      <span className="meta">Enabled</span>
+                    </label>
+                    {adminState.error && <p className="empty-state">{adminState.error}</p>}
+                    {adminState.success && <p className="empty-state">{adminState.success}</p>}
+                    <div className="actions">
+                      <button
+                        className="primary"
+                        type="button"
+                        onClick={() => submitAdminAction('enable')}
+                        disabled={adminState.loading}
+                      >
+                        {adminState.loading ? 'Saving...' : 'Update status'}
+                      </button>
+                      <button
+                        className="ghost danger"
+                        type="button"
+                        onClick={() => submitAdminAction('delete')}
+                        disabled={adminState.loading}
+                      >
+                        Delete user
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+            ) : isNotificationsView ? (
               <section className="panel stack">
                 <header className="panel-header">
                   <div>

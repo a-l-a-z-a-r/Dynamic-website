@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   HttpStatus,
@@ -20,6 +21,7 @@ import { FriendsService } from './friends/friends.service';
 import { BooklistsService } from './booklists/booklists.service';
 import { NotificationsService } from './notifications/notifications.service';
 import {
+  AdminUserStatusDto,
   BookReviewDto,
   CommentDto,
   CreateReviewDto,
@@ -30,6 +32,10 @@ import {
   ReplyDto,
   SignupDto,
 } from './dto/app.dto';
+import { Roles } from './auth/roles.decorator';
+import { RolesGuard } from './auth/roles.guard';
+
+const ADMIN_ROLE = 'admin';
 
 @Controller()
 export class AppController {
@@ -345,6 +351,37 @@ export class AppController {
       const message = (err as Error)?.message || 'Login failed';
       throw new HttpException({ error: message }, status);
     }
+  }
+
+  @UseGuards(KeycloakAuthGuard, RolesGuard)
+  @Roles(ADMIN_ROLE)
+  @Post('admin/users/:username/enabled')
+  async setUserEnabled(
+    @Param('username') username: string,
+    @Body() body: AdminUserStatusDto,
+  ) {
+    if (!username) {
+      throw new HttpException({ error: 'Missing username' }, HttpStatus.BAD_REQUEST);
+    }
+    const updated = await this.keycloakAdminService.setUserEnabled(username, body.enabled);
+    if (!updated) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND);
+    }
+    return { ok: true };
+  }
+
+  @UseGuards(KeycloakAuthGuard, RolesGuard)
+  @Roles(ADMIN_ROLE)
+  @Delete('admin/users/:username')
+  async deleteUser(@Param('username') username: string) {
+    if (!username) {
+      throw new HttpException({ error: 'Missing username' }, HttpStatus.BAD_REQUEST);
+    }
+    const deleted = await this.keycloakAdminService.deleteUserByUsername(username);
+    if (!deleted) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND);
+    }
+    return { ok: true };
   }
 
   @Get('health')

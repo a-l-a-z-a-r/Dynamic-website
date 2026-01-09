@@ -534,6 +534,12 @@ main { width: min(1200px, 94vw); margin: 32px auto 0; display: flex; flex-direct
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 8px; }
 .form.vertical { grid-template-columns: 1fr; }
 .field { display: grid; gap: 6px; }
+.field.inline {
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: start;
+  gap: 10px;
+}
 label { color: var(--muted); font-weight: 600; }
 input, textarea, select {
   width: 100%;

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class SignupDto {
   @IsString()
@@ -109,4 +109,10 @@ export class CreateReviewDto {
   @IsOptional()
   @IsString()
   coverUrl?: string;
+}
+
+export class AdminUserStatusDto {
+  @Type(() => Boolean)
+  @IsBoolean()
+  enabled!: boolean;
 }

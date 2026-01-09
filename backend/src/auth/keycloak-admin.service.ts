@@ -135,6 +135,64 @@ export class KeycloakAdminService {
     }));
   }
 
+  async deleteUserByUsername(username: string) {
+    this.loadConfig();
+    const user = await this.findUserByUsername(username);
+    if (!user?.id) {
+      return false;
+    }
+    const token = await this.fetchAdminToken();
+    const { url, realm } = this.config!;
+    const endpoint = new URL(`${url}/admin/realms/${realm}/users/${user.id}`);
+
+    const result = await this.request('DELETE', endpoint, {
+      Authorization: `Bearer ${token}`,
+    });
+
+    if (result.status === 200 || result.status === 204) {
+      return true;
+    }
+
+    const detail = result.body || 'Failed to delete user';
+    const error = new Error(detail);
+    (error as any).status = result.status;
+    throw error;
+  }
+
+  async setUserEnabled(username: string, enabled: boolean) {
+    this.loadConfig();
+    const user = await this.findUserByUsername(username);
+    if (!user?.id) {
+      return false;
+    }
+
+    const token = await this.fetchAdminToken();
+    const { url, realm } = this.config!;
+    const endpoint = new URL(`${url}/admin/realms/${realm}/users/${user.id}`);
+
+    const existing = await this.fetchUserById(user.id, token);
+    const body = JSON.stringify({ ...existing, enabled });
+
+    const result = await this.request(
+      'PUT',
+      endpoint,
+      {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+    );
+
+    if (result.status === 200 || result.status === 204) {
+      return true;
+    }
+
+    const detail = result.body || 'Failed to update user';
+    const error = new Error(detail);
+    (error as any).status = result.status;
+    throw error;
+  }
+
   private async fetchAdminToken() {
     const { clientId, clientSecret } = this.config!;
     const params = new URLSearchParams({
@@ -160,6 +218,23 @@ export class KeycloakAdminService {
     }
 
     return data.access_token as string;
+  }
+
+  private async fetchUserById(userId: string, token: string) {
+    const { url, realm } = this.config!;
+    const endpoint = new URL(`${url}/admin/realms/${realm}/users/${userId}`);
+    const result = await this.request('GET', endpoint, {
+      Authorization: `Bearer ${token}`,
+    });
+
+    if (result.status < 200 || result.status >= 300) {
+      const detail = result.body || 'Failed to load user';
+      const error = new Error(detail);
+      (error as any).status = result.status;
+      throw error;
+    }
+
+    return JSON.parse(result.body || '{}');
   }
 
   private request(

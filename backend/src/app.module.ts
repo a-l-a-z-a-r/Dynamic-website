@@ -12,6 +12,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { KeycloakAdminService } from './auth/keycloak-admin.service';
 import { KeycloakAuthService } from './auth/keycloak-auth.service';
+import { RolesGuard } from './auth/roles.guard';
 
 @Module({
   imports: [
@@ -26,6 +27,6 @@ import { KeycloakAuthService } from './auth/keycloak-auth.service';
     NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, KeycloakAdminService, KeycloakAuthService],
+  providers: [AppService, KeycloakAdminService, KeycloakAuthService, RolesGuard],
 })
 export class AppModule {}
