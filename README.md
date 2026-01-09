@@ -31,7 +31,7 @@
 
 ## 6. Security, Ethics & Compliance
 - [x] **REQ20:** Secure authentication via **JWT/OAuth 2.0 (Keycloak)**.
-- [x] **REQ21:** Role-Based Access Control (**RBAC**) for sensitive data.
+- [] **REQ21:** Role-Based Access Control (**RBAC**) for sensitive data.
 - [ ] **REQ22:** Documented protection against **SQL Injection** and **XSS**.
 - [x] **REQ23:** HTTPS implementation via **SSL/TLS** (Let's Encrypt).
 - [ ] **REQ24:** Documented certificate management and auto-renewal process.
