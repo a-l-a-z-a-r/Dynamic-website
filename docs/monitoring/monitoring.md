@@ -8,7 +8,12 @@ kubectl apply -f k8s/monitoring/
  
 How to access?: 
 Bash: 
-kubectl port-forward -n monitoring svc/prometheus 9090:9090
+kubectl port-forward -n monitoring svc/prometheus 9090:9090 & \
 kubectl port-forward -n monitoring svc/grafana 3000:3000
+
+Graphana:
+Admin
+Admin or admin
+
 
 Verification?: Prometheus sources show UP and grafana charts working.
