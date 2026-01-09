@@ -1,14 +1,14 @@
 # 🚀 Project Implementation Checklist
 
 ## 1. Project Foundation & Requirements
-- [x ] **REQ1:** Submit project proposal document and obtain instructor approval.
-- [x ] **REQ2:** Implement **Content Adaptation** (at least 2 types of dynamic behavior: e.g., user-specific content, real-time updates).
+- [x]  **REQ1:** Submit project proposal document and obtain instructor approval.
+- [x] **REQ2:** Implement **Content Adaptation** (at least 2 types of dynamic behavior: e.g., user-specific content, real-time updates).
 
 ## 2. Full-Stack & Microservices Implementation
-- [ x] **REQ3:** Functional Frontend (React/Vue/Angular) with minimal focus.
-- [x ] **REQ4:** Backend API (Node.js, Python, or Go).
-- [x ] **REQ5:** Minimum **50% code coverage** on backend services.
-- [x ] **REQ6:** Functional GitHub Actions **CI pipeline** and **Argo GitOps** setup.
+- [x] **REQ3:** Functional Frontend (React/Vue/Angular) with minimal focus.
+- [x] **REQ4:** Backend API (Node.js, Python, or Go).
+- [x] **REQ5:** Minimum **50% code coverage** on backend services.
+- [x] **REQ6:** Functional GitHub Actions **CI pipeline** and **Argo GitOps** setup.
 - [ ] **REQ7:** Implement 2+ **endpoint failure test cases** per service (unauthorized, validation errors, etc.).
 - [ ] **REQ8:** Database selection (PostgreSQL/MongoDB) with documented justification.
 - [ ] **REQ9:** Documented database schema with motivated relationship design.
