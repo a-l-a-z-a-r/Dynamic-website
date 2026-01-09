@@ -148,28 +148,27 @@ spec:
     - name: http
       port: 80
       targetPort: 80
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: email-worker
+  name: notifications-worker
   namespace: socialbook
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: email-worker
+      app: notifications-worker
   template:
     metadata:
       labels:
-        app: email-worker
+        app: notifications-worker
       annotations:
         app.kubernetes.io/version: "latest"
         app.kubernetes.io/rollout-trigger: "dev-${GIT_SHA}"
     spec:
       containers:
-        - name: email-worker
-          image: alazar111/socialbook-email-worker:latest
+        - name: notifications-worker
+          image: alazar111/socialbook-notifications-worker:latest
           imagePullPolicy: Always
           env:
             - name: RABBITMQ_URL
@@ -177,39 +176,10 @@ spec:
             - name: RABBITMQ_EXCHANGE
               value: socialbook.events
             - name: RABBITMQ_QUEUE
-              value: socialbook.comments
+              value: socialbook.notifications
             - name: RABBITMQ_ROUTING_KEY
               value: review.commented
-            - name: KEYCLOAK_URL
-              value: https://keycloak.ltu-m7011e-11.se
-            - name: KEYCLOAK_REALM
-              value: Userenter
-            - name: KEYCLOAK_ADMIN_CLIENT_ID
-              value: socialbook-admin
-            - name: KEYCLOAK_ADMIN_CLIENT_SECRET
-              value: Q5kcOEPkC2guAT5yKPJgnc7FPNmIROje
-            - name: SMTP_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: email-worker-smtp
-                  key: SMTP_HOST
-            - name: SMTP_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: email-worker-smtp
-                  key: SMTP_PORT
-            - name: SMTP_USER
-              valueFrom:
-                secretKeyRef:
-                  name: email-worker-smtp
-                  key: SMTP_USER
-            - name: SMTP_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: email-worker-smtp
-                  key: SMTP_PASS
-            - name: EMAIL_FROM
-              valueFrom:
-                secretKeyRef:
-                  name: email-worker-smtp
-                  key: EMAIL_FROM
+            - name: MONGODB_URI
+              value: mongodb://mongo:27017/socialbook
+            - name: NOTIFICATIONS_COLLECTION
+              value: notifications

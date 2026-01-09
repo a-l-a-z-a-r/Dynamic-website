@@ -42,14 +42,14 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/socialbook-frontend:frontend-${{ github.sha }}
             ${{ env.DOCKERHUB_USERNAME }}/socialbook-frontend:latest
 
-      - name: Build and push email worker
+      - name: Build and push notifications worker
         uses: docker/build-push-action@v5
         with:
-          context: ./email-worker
+          context: ./worker
           push: true
           tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/socialbook-email-worker:worker-${{ github.sha }}
-            ${{ env.DOCKERHUB_USERNAME }}/socialbook-email-worker:latest
+            ${{ env.DOCKERHUB_USERNAME }}/socialbook-notifications-worker:worker-${{ github.sha }}
+            ${{ env.DOCKERHUB_USERNAME }}/socialbook-notifications-worker:latest
 
       - name: Update ArgoCD manifest image tags
         run: |
@@ -60,7 +60,7 @@ jobs:
           version = "${{ github.sha }}"
           backend_image = f"${{ env.DOCKERHUB_USERNAME }}/socialbook-backend:backend-{version}"
           frontend_image = f"${{ env.DOCKERHUB_USERNAME }}/socialbook-frontend:frontend-{version}"
-          worker_image = f"${{ env.DOCKERHUB_USERNAME }}/socialbook-email-worker:worker-{version}"
+          worker_image = f"${{ env.DOCKERHUB_USERNAME }}/socialbook-notifications-worker:worker-{version}"
 
           path = Path("k8s/socialbook.yaml")
           data = path.read_text()
@@ -75,7 +75,7 @@ jobs:
               data,
           )
           data = re.sub(
-              r"(?m)^(\\s*image:\\s+).*/socialbook-email-worker:[^\\s]+",
+              r"(?m)^(\\s*image:\\s+).*/socialbook-notifications-worker:[^\\s]+",
               lambda m: f"{m.group(1)}{worker_image}",
               data,
           )

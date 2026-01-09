@@ -98,6 +98,11 @@ const App = () => {
   const [friendsState, setFriendsState] = useState({ loading: false, error: '', friends: [] });
   const [friendForm, setFriendForm] = useState({ username: '' });
   const [friendBooklists, setFriendBooklists] = useState({});
+  const [notificationsState, setNotificationsState] = useState({
+    loading: false,
+    error: '',
+    items: [],
+  });
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentState, setCommentState] = useState({ loading: false, error: '' });
   const [replyDrafts, setReplyDrafts] = useState({});
@@ -200,6 +205,7 @@ const App = () => {
   const bookMatch = path.match(/^\/book\/(.+)$/);
   const bookTitle = bookMatch ? decodeURIComponent(bookMatch[1]) : '';
   const isFriendsView = path === '/friends';
+  const isNotificationsView = path === '/notifications';
 
   useEffect(() => {
     if (!hasKeycloakConfig()) {
@@ -340,6 +346,11 @@ const App = () => {
       active = false;
     };
   }, [isFriendsView]);
+
+  useEffect(() => {
+    if (!isNotificationsView) return;
+    fetchNotifications();
+  }, [isNotificationsView]);
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -770,6 +781,26 @@ const App = () => {
     }
   };
 
+  const fetchNotifications = async () => {
+    const token = getActiveToken();
+    if (!token) {
+      setNotificationsState({ loading: false, error: 'Sign in to see notifications.', items: [] });
+      return;
+    }
+    setNotificationsState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const data = await authFetch('/notifications', token);
+      const items = Array.isArray(data?.notifications) ? data.notifications : [];
+      setNotificationsState({ loading: false, error: '', items });
+    } catch (err) {
+      setNotificationsState({
+        loading: false,
+        error: err.message || 'Unable to load notifications.',
+        items: [],
+      });
+    }
+  };
+
   const fetchBooklists = async (username) => {
     try {
       const response = await fetch(apiUrl(`/booklists/${username}`));
@@ -1154,6 +1185,13 @@ const App = () => {
               >
                 Friends
               </button>
+              <button
+                className={`library-link${isNotificationsView ? ' active' : ''}`}
+                type="button"
+                onClick={() => navigate('/notifications')}
+              >
+                Notifications
+              </button>
             </div>
             <div className="sidebar-section">
               <div className="sidebar-section-header">
@@ -1205,7 +1243,15 @@ const App = () => {
             <header className="content-header">
               <div>
                 <p className="label">
-                  {isBookView ? 'Book' : isProfileView ? 'Profile' : isFriendsView ? 'Friends' : 'Dashboard'}
+                  {isBookView
+                    ? 'Book'
+                    : isProfileView
+                      ? 'Profile'
+                      : isFriendsView
+                        ? 'Friends'
+                        : isNotificationsView
+                          ? 'Notifications'
+                          : 'Dashboard'}
                 </p>
                 <h2>
                   {isBookView
@@ -1214,7 +1260,9 @@ const App = () => {
                       ? profileUsername
                       : isFriendsView
                         ? 'Your friends'
-                        : `Welcome back, ${displayName}`}
+                        : isNotificationsView
+                          ? 'Your notifications'
+                          : `Welcome back, ${displayName}`}
                 </h2>
               </div>
               <div className="content-actions">
@@ -1228,7 +1276,7 @@ const App = () => {
                     aria-label="Search books"
                   />
                 </label>
-                {!isBookView && !isFriendsView && (
+                {!isBookView && !isFriendsView && !isNotificationsView && (
                   <button className="ghost" type="button" onClick={handleFindBooks}>
                     Refresh feed
                   </button>
@@ -1236,7 +1284,41 @@ const App = () => {
               </div>
             </header>
 
-            {isFriendsView ? (
+            {isNotificationsView ? (
+              <section className="panel stack">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Notifications</p>
+                    <h3>Recent activity</h3>
+                  </div>
+                  <button className="ghost" type="button" onClick={fetchNotifications}>
+                    Refresh
+                  </button>
+                </header>
+                {notificationsState.error && (
+                  <p className="empty-state">{notificationsState.error}</p>
+                )}
+                {notificationsState.loading ? (
+                  <p className="empty-state">Loading notifications…</p>
+                ) : notificationsState.items.length === 0 ? (
+                  <p className="empty-state">No notifications yet.</p>
+                ) : (
+                  <ul className="queue-list">
+                    {notificationsState.items.map((item) => (
+                      <li key={item._id}>
+                        <div>
+                          <p className="title">
+                            {item.actor || 'Someone'} replied to your comment
+                          </p>
+                          <p className="meta">{item.message || 'New reply'}</p>
+                        </div>
+                        <span className="meta">{formatRefreshTime(item.created_at)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ) : isFriendsView ? (
               <section className="panel stack">
                 <header className="panel-header">
                   <div>
