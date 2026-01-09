@@ -1,0 +1,101 @@
+asyncapi: 2.6.0
+info:
+  title: Socialbook Events API
+  version: 1.0.0
+  description: |
+    AsyncAPI specification for Socialbook RabbitMQ events.
+
+servers:
+  rabbitmq:
+    url: ${RABBITMQ_URL}
+    protocol: amqp
+    description: RabbitMQ broker for Socialbook events.
+
+channels:
+  socialbook.events.review.created:
+    description: Review created events.
+    publish:
+      message:
+        $ref: '#/components/messages/ReviewCreated'
+  socialbook.events.review.commented:
+    description: Review comment events.
+    publish:
+      message:
+        $ref: '#/components/messages/ReviewCommented'
+  socialbook.events.import.requested:
+    description: Import request events.
+    publish:
+      message:
+        $ref: '#/components/messages/ImportRequested'
+
+components:
+  messages:
+    ReviewCreated:
+      name: ReviewCreated
+      title: Review Created
+      payload:
+        $ref: '#/components/schemas/ReviewCreatedPayload'
+    ReviewCommented:
+      name: ReviewCommented
+      title: Review Commented
+      payload:
+        $ref: '#/components/schemas/ReviewCommentedPayload'
+    ImportRequested:
+      name: ImportRequested
+      title: Import Requested
+      payload:
+        $ref: '#/components/schemas/ImportRequestedPayload'
+  schemas:
+    ReviewCreatedPayload:
+      type: object
+      properties:
+        user:
+          type: string
+        book:
+          type: string
+        rating:
+          type: number
+        review:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        coverUrl:
+          type: string
+      required:
+        - user
+        - book
+        - rating
+        - review
+    ReviewCommentedPayload:
+      type: object
+      properties:
+        reviewId:
+          type: string
+        commentId:
+          type: string
+        parentCommentId:
+          type: string
+        user:
+          type: string
+        message:
+          type: string
+        targetUser:
+          type: string
+      required:
+        - reviewId
+        - user
+        - message
+    ImportRequestedPayload:
+      type: object
+      properties:
+        query:
+          type: string
+        source:
+          type: string
+        requestedBy:
+          type: string
+      required:
+        - query
