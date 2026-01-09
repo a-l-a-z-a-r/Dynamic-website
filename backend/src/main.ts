@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NextFunction, Request, Response } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -6,6 +7,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    sanitizeObject(req.body);
+    sanitizeObject(req.query);
+    sanitizeObject(req.params);
+    next();
+  });
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Neon', new Date().toISOString());
     next();
@@ -37,3 +51,22 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+function sanitizeObject(value: unknown) {
+  if (!value || typeof value !== 'object') return;
+  const stack: unknown[] = [value];
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || typeof current !== 'object') continue;
+    Object.keys(current as Record<string, unknown>).forEach((key) => {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete (current as Record<string, unknown>)[key];
+        return;
+      }
+      const nested = (current as Record<string, unknown>)[key];
+      if (nested && typeof nested === 'object') {
+        stack.push(nested);
+      }
+    });
+  }
+}

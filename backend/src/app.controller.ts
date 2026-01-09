@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ReviewPayload } from './reviews/reviews.service';
 import { KeycloakAuthGuard } from './auth/keycloak.guard';
 import { KeycloakAdminService } from './auth/keycloak-admin.service';
 import { KeycloakAuthService } from './auth/keycloak-auth.service';
@@ -20,50 +19,17 @@ import { ProfilesService } from './profiles/profiles.service';
 import { FriendsService } from './friends/friends.service';
 import { BooklistsService } from './booklists/booklists.service';
 import { NotificationsService } from './notifications/notifications.service';
-
-type SignupPayload = {
-  username: string;
-  email?: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  age?: number | string;
-};
-
-type LoginPayload = {
-  username: string;
-  password: string;
-};
-
-type ImportPayload = {
-  query: string;
-  source?: string;
-};
-
-type CommentPayload = {
-  message: string;
-};
-
-type ReplyPayload = {
-  message: string;
-  reviewId: string;
-};
-
-type ProfileImagePayload = {
-  imageUrl: string;
-};
-
-type BookReviewPayload = {
-  rating?: number | string;
-  review?: string;
-  genre?: string;
-  status?: string;
-  coverUrl?: string;
-};
-
-type FriendPayload = {
-  friendId: string;
-};
+import {
+  BookReviewDto,
+  CommentDto,
+  CreateReviewDto,
+  FriendDto,
+  ImportDto,
+  LoginDto,
+  ProfileImageDto,
+  ReplyDto,
+  SignupDto,
+} from './dto/app.dto';
 
 @Controller()
 export class AppController {
@@ -115,7 +81,7 @@ export class AppController {
   @Post('books/:book/reviews')
   async addBookReview(
     @Param('book') book: string,
-    @Body() body: BookReviewPayload,
+    @Body() body: BookReviewDto,
     @Req() req: { user?: Record<string, unknown> },
   ) {
     const ownerId =
@@ -142,7 +108,7 @@ export class AppController {
 
   @UseGuards(KeycloakAuthGuard)
   @Post('reviews')
-  async createReview(@Body() body: ReviewPayload) {
+  async createReview(@Body() body: CreateReviewDto) {
     if (!this.appService.hasRequiredReviewFields(body)) {
       throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
     }
@@ -154,7 +120,7 @@ export class AppController {
   @Post('reviews/:reviewId/comments')
   async addReviewComment(
     @Param('reviewId') reviewId: string,
-    @Body() body: CommentPayload,
+    @Body() body: CommentDto,
     @Req() req: { user?: Record<string, unknown> },
   ) {
     const ownerId =
@@ -176,7 +142,7 @@ export class AppController {
   @Post('comments/:commentId/replies')
   async addCommentReply(
     @Param('commentId') commentId: string,
-    @Body() body: ReplyPayload,
+    @Body() body: ReplyDto,
     @Req() req: { user?: Record<string, unknown> },
   ) {
     const ownerId =
@@ -234,7 +200,7 @@ export class AppController {
 
   @UseGuards(KeycloakAuthGuard)
   @Post('imports')
-  async requestImport(@Body() body: ImportPayload) {
+  async requestImport(@Body() body: ImportDto) {
     if (!body?.query) {
       throw new HttpException({ error: 'Missing import query' }, HttpStatus.BAD_REQUEST);
     }
@@ -246,7 +212,7 @@ export class AppController {
   }
 
   @Post('signup')
-  async signup(@Body() body: SignupPayload) {
+  async signup(@Body() body: SignupDto) {
     const { username, password, firstName, lastName, age, email } = body || {};
     if (!username || !password || !firstName || !lastName || !age || !email) {
       throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
@@ -296,7 +262,7 @@ export class AppController {
   @UseGuards(KeycloakAuthGuard)
   @Post('profile/image')
   async updateProfileImage(
-    @Body() body: ProfileImagePayload,
+    @Body() body: ProfileImageDto,
     @Req() req: { user?: Record<string, unknown> },
   ) {
     const ownerId =
@@ -336,7 +302,7 @@ export class AppController {
   @UseGuards(KeycloakAuthGuard)
   @Post('friends')
   async addFriend(
-    @Body() body: FriendPayload,
+    @Body() body: FriendDto,
     @Req() req: { user?: Record<string, unknown> },
   ) {
     const ownerId =
@@ -365,7 +331,7 @@ export class AppController {
   }
 
   @Post('login')
-  async login(@Body() body: LoginPayload) {
+  async login(@Body() body: LoginDto) {
     const { username, password } = body || {};
     if (!username || !password) {
       throw new HttpException({ error: 'Missing required fields' }, HttpStatus.BAD_REQUEST);
