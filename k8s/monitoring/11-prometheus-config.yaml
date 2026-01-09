@@ -40,11 +40,10 @@ data:
             namespaces:
               names: ["rabbitmq"]
         relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_container_port_number]
-            regex: "15692"
-            action: keep
           - source_labels: [__meta_kubernetes_pod_ip]
             target_label: __address__
+            action: replace
+            regex: "(.*)"
             replacement: "$1:15692"
 
       - job_name: blackbox-http
