@@ -38,6 +38,16 @@ data:
         static_configs:
           - targets: ["rabbitmq-service-management.rabbitmq.svc.cluster.local:15692"]
 
+      - job_name: rabbitmq-socialbook
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ["rabbitmq"]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            regex: "15692"
+            action: keep
+
       - job_name: blackbox-http
         metrics_path: /probe
         params:
