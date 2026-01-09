@@ -42,6 +42,15 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/socialbook-frontend:frontend-${{ github.sha }}
             ${{ env.DOCKERHUB_USERNAME }}/socialbook-frontend:latest
 
+      - name: Build and push email worker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./email-worker
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/socialbook-email-worker:worker-${{ github.sha }}
+            ${{ env.DOCKERHUB_USERNAME }}/socialbook-email-worker:latest
+
       - name: Update ArgoCD manifest image tags
         run: |
           python - <<'PY'
@@ -51,6 +60,7 @@ jobs:
           version = "${{ github.sha }}"
           backend_image = f"${{ env.DOCKERHUB_USERNAME }}/socialbook-backend:backend-{version}"
           frontend_image = f"${{ env.DOCKERHUB_USERNAME }}/socialbook-frontend:frontend-{version}"
+          worker_image = f"${{ env.DOCKERHUB_USERNAME }}/socialbook-email-worker:worker-{version}"
 
           path = Path("k8s/socialbook.yaml")
           data = path.read_text()
@@ -62,6 +72,11 @@ jobs:
           data = re.sub(
               r"(?m)^(\\s*image:\\s+).*/socialbook-frontend:[^\\s]+",
               lambda m: f"{m.group(1)}{frontend_image}",
+              data,
+          )
+          data = re.sub(
+              r"(?m)^(\\s*image:\\s+).*/socialbook-email-worker:[^\\s]+",
+              lambda m: f"{m.group(1)}{worker_image}",
               data,
           )
           data = re.sub(
