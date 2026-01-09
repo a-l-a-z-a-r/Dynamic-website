@@ -1,0 +1,23 @@
+frontend:
+  image: "alazar111/socialbook-frontend:latest"
+
+backend:
+  image: "alazar111/socialbook-backend:latest"
+  mongodbUri: "mongodb://socialbook-mongodb:27017/socialbook"
+  rabbitmqUrl: "amqp://socialbook-rabbitmq:5672"
+
+ingress:
+  host: "socialbook.local"
+
+mongo:
+  image: "mongo:7"
+  database: "socialbook"
+
+rabbitmq:
+  image: "rabbitmq:3-management"
+  username: "user"
+  password: "password"
+
+backend:
+  mongodbUri: "mongodb://socialbook-mongo:27017/socialbook"
+  rabbitmqUrl: "amqp://user:password@socialbook-rabbitmq:5672"

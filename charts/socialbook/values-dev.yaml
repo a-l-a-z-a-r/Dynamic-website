@@ -1,0 +1,5 @@
+ingress:
+  host: "socialbook.local"
+
+backend:
+  image: "alazar111/socialbook-backend:latest"

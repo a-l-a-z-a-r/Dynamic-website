@@ -1,0 +1,39 @@
+To run:
+
+    minikube start or minikube status
+
+helm upgrade socialbook charts/socialbook \
+  -n socialbook \
+  -f charts/socialbook/values-dev.yaml \
+  --set backend.image=alazar111/socialbook-backend:latest
+
+kubectl get pods -n socialbook
+
+  helm list -n socialbook
+kubectl get pods -n socialbook
+kubectl get svc -n socialbook
+
+Proof:
+
+oscar@oscar-Aspire-A315-56:~/project/Socialbook$ helm list -n socialbook
+kubectl get pods -n socialbook
+kubectl get svc -n socialbook
+kubectl get ingress -n socialbook
+
+NAME      	NAMESPACE 	REVISION	UPDATED                                	STATUS  	CHART           	APP VERSION
+socialbook	socialbook	8       	2026-01-09 02:59:13.813568623 +0100 CET	deployed	socialbook-0.1.0	           
+NAME                                   READY   STATUS      RESTARTS        AGE
+pull-test                              0/1     Completed   0               16d
+socialbook-backend-6d95b66f77-mgf2m    1/1     Running     1 (7m46s ago)   56m
+socialbook-frontend-689f4d64d9-zl7bz   1/1     Running     0               88s
+socialbook-mongo-7bcc4b5645-79rp6      1/1     Running     1 (7m46s ago)   60m
+socialbook-rabbitmq-79c75d5d95-qppnz   1/1     Running     1 (7m46s ago)   60m
+NAME                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)              AGE
+backend               ClusterIP   10.110.18.115    <none>        80/TCP               93s
+socialbook-backend    ClusterIP   10.109.69.144    <none>        80/TCP               106m
+socialbook-frontend   ClusterIP   10.104.61.41     <none>        80/TCP               106m
+socialbook-mongo      ClusterIP   10.111.147.64    <none>        27017/TCP            60m
+socialbook-rabbitmq   ClusterIP   10.111.147.201   <none>        5672/TCP,15672/TCP   106m
+NAME                 CLASS   HOSTS              ADDRESS        PORTS   AGE
+socialbook-ingress   nginx   socialbook.local   192.168.49.2   80      106m
+oscar@oscar-Aspire-A315-56:~/project/Socialbook$ 
