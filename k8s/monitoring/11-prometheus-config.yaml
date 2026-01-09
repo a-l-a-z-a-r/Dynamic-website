@@ -33,6 +33,11 @@ data:
             regex: kube-state-metrics
             action: keep
 
+      - job_name: rabbitmq
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["rabbitmq-service-management.rabbitmq.svc.cluster.local:15692"]
+
       - job_name: blackbox-http
         metrics_path: /probe
         params:
