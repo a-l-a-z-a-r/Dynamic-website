@@ -34,6 +34,7 @@ data:
             action: keep
 
       - job_name: rabbitmq-socialbook
+        # Scrape Socialbook RabbitMQ pods directly on :15692.
         kubernetes_sd_configs:
           - role: pod
             namespaces:
