@@ -6,10 +6,13 @@
   "license": "MIT",
   "scripts": {
     "build": "nest build",
+    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --max-warnings=0",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "seed:openlibrary": "node scripts/seed-openlibrary.js"
+    "seed:openlibrary": "node scripts/seed-openlibrary.js",
+    "test": "jest --coverage --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.10",
@@ -25,8 +28,16 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@types/jest": "^29.5.14",
     "@types/express": "^5.0.6",
     "@types/node": "^20.14.10",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.5.4"

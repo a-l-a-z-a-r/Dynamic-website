@@ -1,0 +1,95 @@
+// Socialbook backend schema (MongoDB -> DBML)
+// Mongoose _id fields are represented as primary keys.
+
+Table reviews {
+  id ObjectId [pk]
+  user varchar [not null]
+  book varchar [not null]
+  rating int [not null]
+  review varchar [not null]
+  genre varchar [not null]
+  status varchar
+  coverUrl varchar
+  created_at datetime
+}
+
+Table review_comments {
+  id ObjectId [pk]
+  review_id ObjectId [not null]
+  user varchar [not null]
+  message varchar [not null]
+  created_at datetime [not null]
+}
+
+Table comments {
+  id ObjectId [pk]
+  review_id ObjectId [not null]
+  user varchar [not null]
+  message varchar [not null]
+  parent_comment_id ObjectId
+  created_at datetime
+}
+
+Table notifications {
+  id ObjectId [pk]
+  user varchar [not null]
+  actor varchar
+  message varchar
+  review_id ObjectId
+  comment_id ObjectId
+  read boolean [not null, default: false]
+  created_at datetime
+}
+
+Table friends {
+  id ObjectId [pk]
+  owner_id varchar [not null]
+  friend_id varchar [not null]
+  created_at datetime
+  updated_at datetime
+
+  indexes {
+    (owner_id, friend_id) [unique]
+  }
+}
+
+Table profiles {
+  id ObjectId [pk]
+  username varchar [not null]
+  image_url varchar
+  created_at datetime
+  updated_at datetime
+
+  indexes {
+    (username) [unique]
+  }
+}
+
+Table booklists {
+  id ObjectId [pk]
+  owner_id varchar [not null]
+  name varchar [not null]
+  description varchar
+  visibility varchar
+  cover_url varchar
+  total_items int
+  created_at datetime
+  updated_at datetime
+}
+
+Table booklist_items {
+  id ObjectId [pk]
+  booklist_id ObjectId [not null]
+  book_id varchar [not null]
+  added_by_id varchar [not null]
+  position int
+  notes varchar
+  added_at datetime
+}
+
+Ref: comments.review_id > reviews.id
+Ref: notifications.review_id > reviews.id
+Ref: notifications.comment_id > comments.id
+Ref: booklist_items.booklist_id > booklists.id
+// Embedded review comments live inside reviews documents; modeled here for diagramming.
+Ref: review_comments.review_id > reviews.id

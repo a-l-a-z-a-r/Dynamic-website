@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    env:
+      KEYCLOAK_URL: https://keycloak.example.test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: Socialbook/backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Socialbook/backend
+        run: npm ci
+
+      - name: Run tests with coverage
+        working-directory: Socialbook/backend
+        run: npm test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: Socialbook/backend/coverage/lcov.info
+          flags: backend
+
+  lint-prettier:
+    name: Lint and Prettier
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: Socialbook/backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Socialbook/backend
+        run: npm ci
+
+      - name: Run lint
+        working-directory: Socialbook/backend
+        run: npm run lint
+
+      - name: Run prettier check
+        working-directory: Socialbook/backend
+        run: npm run format:check

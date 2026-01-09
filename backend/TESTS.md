@@ -1,0 +1,69 @@
+# Backend Tests
+
+This document lists the backend unit tests and what they cover.
+
+- `src/__tests__/app.service.spec.ts`
+  - Feed generation from reviews
+  - Recommendations ordering
+  - Shelf updates for finished reviews
+  - Comment handling for missing/existing reviews
+  - Comment thread building and field validation
+  - Created-at formatting
+- `src/__tests__/app.controller.failure.spec.ts`
+  - Reviews: missing owner, invalid rating, missing required fields
+  - Comments: missing owner, missing message, missing review, missing reply fields, missing parent
+  - Notifications: missing owner, missing id, unknown notification
+  - Friends: missing owner, missing friend id, self-add rejection
+  - Booklists: missing friend id validation
+  - Auth: missing signup/login fields, login error mapping
+  - Profiles: missing username, missing user, missing owner/image url
+  - Imports/books: missing query, missing book id
+- `src/__tests__/reviews.service.spec.ts`
+  - Book lookup and cover deletion guards
+  - Review creation with numeric ratings
+  - Image content type checks and PNG dimension parsing
+  - Min-byte validation and endian readers
+  - Cover URL validation paths
+  - Mongoose chain behavior for find/update helpers
+- `src/__tests__/comments.service.spec.ts`
+  - Comment creation
+  - Missing-id guard for lookup
+  - Listing comments by review ids
+- `src/__tests__/booklists.service.spec.ts`
+  - Booklist creation defaults
+  - Public list lookup guard
+  - Search normalization
+  - Item add + total increment
+  - Owner-only delete behavior
+- `src/__tests__/friends.service.spec.ts`
+  - Missing-owner guard
+  - Friend listing sorting chain
+  - Add friend guard and happy path
+- `src/__tests__/notifications.service.spec.ts`
+  - Notification creation defaults
+  - Missing-user guard
+  - Listing with limit
+  - Mark read guard and update
+- `src/__tests__/profiles.service.spec.ts`
+  - Missing-username guards
+  - Find profile by username
+  - Upsert profile image
+- `src/__tests__/queue.service.spec.ts`
+  - Publish guard when channel is missing
+  - Message ack on valid payload
+  - Message nack on invalid payload
+- `src/__tests__/keycloak-auth.service.spec.ts`
+  - Missing config guard
+  - Login failure mapping
+  - Successful token response
+- `src/__tests__/keycloak.guard.spec.ts`
+  - Missing Keycloak URL guard
+  - Missing bearer token guard
+  - Invalid token rejection
+  - Valid token attaches user payload
+- `src/__tests__/keycloak-admin.service.spec.ts`
+  - Missing config guard
+  - Admin user creation flow
+  - Find user by username (exists/missing)
+  - Search user mapping
+  - Token response validation
