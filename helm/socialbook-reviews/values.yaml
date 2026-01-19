@@ -14,7 +14,7 @@ service:
   port: 5000
 
 env:
-  MONGODB_URI: mongodb://mongo:27017/socialbook
+  MONGODB_URI: mongodb://socialbook-mongo-reviews:27017/reviews
   KEYCLOAK_URL: https://keycloak.ltu-m7011e-11.se
   KEYCLOAK_REALM: Userenter
   RABBITMQ_URL: amqp://admin:HelloWorld123@rabbitmq-service-api.rabbitmq.svc.cluster.local:5672

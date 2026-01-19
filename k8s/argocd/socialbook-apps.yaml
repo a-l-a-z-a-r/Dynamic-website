@@ -1,14 +1,98 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: socialbook-mongo
+  name: socialbook-mongo-reviews
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/a-l-a-z-a-r/Socialbook
     targetRevision: Dev
-    path: helm/socialbook-mongo
+    path: helm/socialbook-mongo-reviews
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-mongo-users
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-mongo-users
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-mongo-social
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-mongo-social
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-mongo-booklists
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-mongo-booklists
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-mongo-notifications
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-mongo-notifications
   destination:
     server: https://kubernetes.default.svc
     namespace: socialbook

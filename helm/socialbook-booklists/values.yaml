@@ -14,6 +14,6 @@ service:
   port: 5000
 
 env:
-  MONGODB_URI: mongodb://mongo:27017/socialbook
+  MONGODB_URI: mongodb://socialbook-mongo-booklists:27017/booklists
   KEYCLOAK_URL: https://keycloak.ltu-m7011e-11.se
   KEYCLOAK_REALM: Userenter

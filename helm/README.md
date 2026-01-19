@@ -1,6 +1,7 @@
 # Socialbook Helm Charts
 
 This directory contains a Helm chart per deployment, split into microservices.
+Each microservice uses its own MongoDB chart/service.
 
 ## Argo CD Applications
 
@@ -13,14 +14,22 @@ Argo CD Application manifests are in `k8s/argocd/socialbook-apps.yaml`.
 - `helm/socialbook-social` - friends and notifications API
 - `helm/socialbook-booklists` - booklists API
 - `helm/socialbook-frontend` - frontend web app
-- `helm/socialbook-mongo` - MongoDB
+- `helm/socialbook-mongo-reviews` - MongoDB for reviews
+- `helm/socialbook-mongo-users` - MongoDB for users
+- `helm/socialbook-mongo-social` - MongoDB for social
+- `helm/socialbook-mongo-booklists` - MongoDB for booklists
+- `helm/socialbook-mongo-notifications` - MongoDB for notifications worker
 - `helm/socialbook-notifications-worker` - notifications worker
 - `helm/socialbook-ingress` - ingress routing for all services
 
 ## Install Order (example)
 
 ```bash
-helm install socialbook-mongo helm/socialbook-mongo
+helm install socialbook-mongo-reviews helm/socialbook-mongo-reviews
+helm install socialbook-mongo-users helm/socialbook-mongo-users
+helm install socialbook-mongo-social helm/socialbook-mongo-social
+helm install socialbook-mongo-booklists helm/socialbook-mongo-booklists
+helm install socialbook-mongo-notifications helm/socialbook-mongo-notifications
 helm install socialbook-reviews helm/socialbook-reviews
 helm install socialbook-users helm/socialbook-users
 helm install socialbook-social helm/socialbook-social

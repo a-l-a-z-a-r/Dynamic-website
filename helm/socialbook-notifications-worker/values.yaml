@@ -15,5 +15,5 @@ env:
   RABBITMQ_EXCHANGE: socialbook.events
   RABBITMQ_QUEUE: socialbook.notifications
   RABBITMQ_ROUTING_KEY: review.commented
-  MONGODB_URI: mongodb://mongo:27017/socialbook
+  MONGODB_URI: mongodb://socialbook-mongo-notifications:27017/notifications
   NOTIFICATIONS_COLLECTION: notifications

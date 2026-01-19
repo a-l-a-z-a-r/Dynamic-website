@@ -1,0 +1,6 @@
+apiVersion: v2
+name: socialbook-mongo-notifications
+description: MongoDB for Socialbook notifications worker
+type: application
+version: 0.1.0
+appVersion: "7"
