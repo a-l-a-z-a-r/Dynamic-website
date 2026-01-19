@@ -1,0 +1,163 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialbook
+spec:
+  ingressClassName: {{ .Values.ingressClassName }}
+  {{- if .Values.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.host }}
+      secretName: {{ .Values.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.host }}
+      http:
+        paths:
+          - path: /api/docs/reviews
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/docs/users
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.users }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/docs/social
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.social }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/docs/booklists
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.booklists }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/feed
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/shelf
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/recommendations
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/reviews
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/books
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/comments
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/imports
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/signup
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.users }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/login
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.users }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/profile
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.users }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.users }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/admin
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.users }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/friends
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.social }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.social }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/booklists
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.booklists }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.frontend }}
+                port:
+                  number: {{ .Values.ports.frontend }}

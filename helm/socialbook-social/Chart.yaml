@@ -1,0 +1,7 @@
+apiVersion: v2
+name: socialbook-social
+description: Social microservice for Socialbook
+
+type: application
+version: 0.1.0
+appVersion: "1.0"

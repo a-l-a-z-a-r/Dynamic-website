@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: alazar111/socialbook-backend
+  tag: latest
+  pullPolicy: Always
+
+command:
+  - node
+  - dist/apps/reviews/main.js
+
+service:
+  type: ClusterIP
+  port: 5000
+
+env:
+  MONGODB_URI: mongodb://mongo:27017/socialbook
+  KEYCLOAK_URL: https://keycloak.ltu-m7011e-11.se
+  KEYCLOAK_REALM: Userenter
+  RABBITMQ_URL: amqp://admin:HelloWorld123@rabbitmq-service-api.rabbitmq.svc.cluster.local:5672
+  BACKEND_IMAGE_TAG: latest

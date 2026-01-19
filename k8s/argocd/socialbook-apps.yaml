@@ -1,0 +1,167 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-mongo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-mongo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-reviews
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-reviews
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-users
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-users
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-social
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-social
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-booklists
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-booklists
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-frontend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-frontend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-notifications-worker
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-notifications-worker
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: socialbook-ingress
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/a-l-a-z-a-r/Socialbook
+    targetRevision: Dev
+    path: helm/socialbook-ingress
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: socialbook
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,17 @@
+ingressClassName: traefik
+host: socialbook.ltu-m7011e-11.se
+
+tls:
+  enabled: true
+  secretName: socialbook-tls
+
+services:
+  reviews: socialbook-reviews
+  users: socialbook-users
+  social: socialbook-social
+  booklists: socialbook-booklists
+  frontend: socialbook-frontend
+
+ports:
+  api: 5000
+  frontend: 80

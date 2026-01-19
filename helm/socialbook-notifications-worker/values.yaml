@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: alazar111/socialbook-notifications-worker
+  tag: latest
+  pullPolicy: Always
+
+service:
+  enabled: false
+  type: ClusterIP
+  port: 8080
+
+env:
+  RABBITMQ_URL: amqp://admin:HelloWorld123@rabbitmq-service-api.rabbitmq.svc.cluster.local:5672
+  RABBITMQ_EXCHANGE: socialbook.events
+  RABBITMQ_QUEUE: socialbook.notifications
+  RABBITMQ_ROUTING_KEY: review.commented
+  MONGODB_URI: mongodb://mongo:27017/socialbook
+  NOTIFICATIONS_COLLECTION: notifications

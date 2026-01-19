@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: alazar111/socialbook-backend
+  tag: latest
+  pullPolicy: Always
+
+command:
+  - node
+  - dist/apps/social/main.js
+
+service:
+  type: ClusterIP
+  port: 5000
+
+env:
+  MONGODB_URI: mongodb://mongo:27017/socialbook
+  KEYCLOAK_URL: https://keycloak.ltu-m7011e-11.se
+  KEYCLOAK_REALM: Userenter

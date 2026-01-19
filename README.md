@@ -5,6 +5,12 @@
 
 Spotify but for books; ENJOY!!
 
+## Microservices and Helm Charts
+
+The backend has been split into dedicated microservices (reviews, users, social, booklists) and each deployment now has its own Helm chart under `helm/`. See `helm/README.md` for chart locations and install order.
+
+Argo CD Application manifests for the microservices live at `k8s/argocd/socialbook-apps.yaml`.
+
 ## Viewing Coverage Reports
 
 Generate HTML coverage report:
