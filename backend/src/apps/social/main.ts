@@ -8,7 +8,7 @@ async function bootstrap() {
     title: 'Socialbook Social API',
     description: 'Friends and notifications service',
     path: 'api/docs/social',
-  });
+  }, 'social');
 
   await app.listen(getPort(), '0.0.0.0');
 }

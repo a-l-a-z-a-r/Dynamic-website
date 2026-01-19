@@ -2,6 +2,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { INestApplication } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
+import {
+  collectDefaultMetrics,
+  Counter,
+  Histogram,
+  Registry,
+} from 'prom-client';
 
 type SwaggerConfig = {
   title: string;
@@ -12,6 +18,7 @@ type SwaggerConfig = {
 export function applyCommonAppMiddleware(
   app: INestApplication,
   swaggerConfig: SwaggerConfig,
+  serviceName: string,
 ) {
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
@@ -42,6 +49,48 @@ export function applyCommonAppMiddleware(
     ],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['X-Neon'],
+  });
+
+  const registry = new Registry();
+  collectDefaultMetrics({ register: registry, labels: { service: serviceName } });
+
+  const requestDuration = new Histogram({
+    name: 'http_request_duration_seconds',
+    help: 'HTTP request duration in seconds',
+    labelNames: ['service', 'method', 'route', 'status_code'],
+    registers: [registry],
+  });
+
+  const requestCount = new Counter({
+    name: 'http_requests_total',
+    help: 'Total HTTP requests',
+    labelNames: ['service', 'method', 'route', 'status_code'],
+    registers: [registry],
+  });
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.path === '/metrics') {
+      return next();
+    }
+    const start = process.hrtime.bigint();
+    res.on('finish', () => {
+      const duration = Number(process.hrtime.bigint() - start) / 1e9;
+      const route = req.route?.path ?? req.path ?? 'unknown';
+      const labels = {
+        service: serviceName,
+        method: req.method,
+        route,
+        status_code: String(res.statusCode),
+      };
+      requestCount.inc(labels);
+      requestDuration.observe(labels, duration);
+    });
+    next();
+  });
+
+  app.getHttpAdapter().get('/metrics', async (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', registry.contentType);
+    res.send(await registry.metrics());
   });
 
   const swaggerDoc = new DocumentBuilder()

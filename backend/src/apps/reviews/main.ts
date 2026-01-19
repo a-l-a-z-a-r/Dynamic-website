@@ -8,7 +8,7 @@ async function bootstrap() {
     title: 'Socialbook Reviews API',
     description: 'Reviews, feed, and imports service',
     path: 'api/docs/reviews',
-  });
+  }, 'reviews');
 
   await app.listen(getPort(), '0.0.0.0');
 }

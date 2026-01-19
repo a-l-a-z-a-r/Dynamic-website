@@ -8,7 +8,7 @@ async function bootstrap() {
     title: 'Socialbook Booklists API',
     description: 'Booklists service',
     path: 'api/docs/booklists',
-  });
+  }, 'booklists');
 
   await app.listen(getPort(), '0.0.0.0');
 }

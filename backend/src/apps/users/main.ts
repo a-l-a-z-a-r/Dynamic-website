@@ -8,7 +8,7 @@ async function bootstrap() {
     title: 'Socialbook Users API',
     description: 'Authentication and profile service',
     path: 'api/docs/users',
-  });
+  }, 'users');
 
   await app.listen(getPort(), '0.0.0.0');
 }
