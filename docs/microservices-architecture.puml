@@ -1,0 +1,54 @@
+@startuml
+skinparam backgroundColor #ffffff
+skinparam componentStyle rectangle
+skinparam defaultFontName Courier
+
+actor User
+
+cloud "Ingress (Traefik)" as Ingress
+
+node "Kubernetes Namespace: socialbook" {
+  component "Frontend" as Frontend
+  component "Reviews API" as Reviews
+  component "Users API" as Users
+  component "Social API" as Social
+  component "Booklists API" as Booklists
+  component "Notifications Worker" as Worker
+
+  database "Mongo Reviews" as MongoReviews
+  database "Mongo Users" as MongoUsers
+  database "Mongo Social" as MongoSocial
+  database "Mongo Booklists" as MongoBooklists
+  database "Mongo Notifications" as MongoNotifications
+}
+
+cloud "Keycloak" as Keycloak
+queue "RabbitMQ" as RabbitMQ
+
+User --> Ingress : HTTPS
+Ingress --> Frontend : / (web)
+Ingress --> Reviews : /api/feed, /api/reviews, /api/books, /api/imports
+Ingress --> Users : /api/signup, /api/login, /api/profile, /api/users, /api/admin
+Ingress --> Social : /api/friends, /api/notifications
+Ingress --> Booklists : /api/booklists
+
+Frontend --> Reviews : /api/* (via ingress)
+Frontend --> Users : /api/* (via ingress)
+Frontend --> Social : /api/* (via ingress)
+Frontend --> Booklists : /api/* (via ingress)
+
+Reviews --> MongoReviews : read/write
+Users --> MongoUsers : read/write
+Social --> MongoSocial : read/write
+Booklists --> MongoBooklists : read/write
+Worker --> MongoNotifications : read/write
+
+Reviews --> RabbitMQ : publish events
+Worker --> RabbitMQ : consume events
+
+Users --> Keycloak : admin + auth
+Reviews --> Keycloak : JWT verify
+Social --> Keycloak : JWT verify
+Booklists --> Keycloak : JWT verify
+
+@enduml
