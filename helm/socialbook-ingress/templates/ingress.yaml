@@ -98,6 +98,13 @@ spec:
                 name: {{ .Values.services.reviews }}
                 port:
                   number: {{ .Values.ports.api }}
+          - path: /api/reviews/health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.reviews }}
+                port:
+                  number: {{ .Values.ports.api }}
           - path: /api/signup
             pathType: Prefix
             backend:
@@ -126,6 +133,13 @@ spec:
                 name: {{ .Values.services.users }}
                 port:
                   number: {{ .Values.ports.api }}
+          - path: /api/users/health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.users }}
+                port:
+                  number: {{ .Values.ports.api }}
           - path: /api/admin
             pathType: Prefix
             backend:
@@ -147,7 +161,21 @@ spec:
                 name: {{ .Values.services.social }}
                 port:
                   number: {{ .Values.ports.api }}
+          - path: /api/social/health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.social }}
+                port:
+                  number: {{ .Values.ports.api }}
           - path: /api/booklists
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.services.booklists }}
+                port:
+                  number: {{ .Values.ports.api }}
+          - path: /api/booklists/health
             pathType: Prefix
             backend:
               service:

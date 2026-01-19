@@ -115,4 +115,9 @@ export class BooklistsController {
   health() {
     return { status: 'ok', service: 'booklists', time: new Date().toISOString() };
   }
+
+  @Get('booklists/health')
+  serviceHealth() {
+    return { status: 'ok', service: 'booklists', time: new Date().toISOString() };
+  }
 }
