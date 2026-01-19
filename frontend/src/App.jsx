@@ -128,6 +128,7 @@ const App = () => {
   const [profile, setProfile] = useState(null);
   const [authError, setAuthError] = useState('');
   const [feed, setFeed] = useState([]);
+  const [feedSource, setFeedSource] = useState('feed');
   const [authView, setAuthView] = useState('signin');
   const [path, setPath] = useState(window.location.pathname);
   const [localToken, setLocalToken] = useState('');
@@ -486,7 +487,28 @@ const App = () => {
         await keycloak.updateToken(70);
       }
       const feedRes = await authFetch('/feed', token);
-      setFeed(feedRes?.feed ?? []);
+      const items = Array.isArray(feedRes?.feed) ? feedRes.feed : [];
+      if (items.length > 0) {
+        setFeed(items);
+        setFeedSource('feed');
+      } else {
+        const recRes = await authFetch('/recommendations', token);
+        const recommendations = Array.isArray(recRes?.recommendations)
+          ? recRes.recommendations
+          : [];
+        const mapped = recommendations.map((rec, index) => ({
+          id: `rec-${index}`,
+          user: 'Socialbook',
+          action: 'recommended',
+          book: rec.title,
+          rating: rec.avg,
+          status: 'recommended',
+          created_at: new Date().toISOString(),
+          review: rec.reason,
+        }));
+        setFeed(mapped);
+        setFeedSource('recommendations');
+      }
       setAuthError('');
     } catch (err) {
       console.error('Failed to load data', err);
@@ -1033,6 +1055,9 @@ const App = () => {
       })
     : feed;
   const filteredBooklists = normalizedQuery ? searchResults.booklists : [];
+  const feedLabel = feedSource === 'recommendations' ? 'Recommended reads' : 'Latest feed';
+  const feedHeadline =
+    feedSource === 'recommendations' ? 'Curated picks to start a list' : 'Fresh book activity';
   const filteredUsers = normalizedQuery ? searchResults.users : [];
   const filteredBooks = normalizedQuery
     ? Array.from(
@@ -2057,8 +2082,8 @@ const App = () => {
                 <section className="panel stack">
                   <header className="panel-header">
                     <div>
-                      <p className="label">Latest feed</p>
-                      <h3>Fresh book activity</h3>
+                      <p className="label">{feedLabel}</p>
+                      <h3>{feedHeadline}</h3>
                     </div>
                   </header>
                   {authError && <p className="empty-state">{authError}</p>}
