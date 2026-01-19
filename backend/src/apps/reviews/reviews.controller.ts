@@ -167,6 +167,6 @@ export class ReviewsController {
 
   @Get('health')
   health() {
-    return this.appService.health();
+    return { service: 'reviews', ...this.appService.health() };
   }
 }

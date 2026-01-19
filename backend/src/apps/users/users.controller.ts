@@ -158,4 +158,9 @@ export class UsersController {
     }
     return { ok: true };
   }
+
+  @Get('health')
+  health() {
+    return { status: 'ok', service: 'users', time: new Date().toISOString() };
+  }
 }

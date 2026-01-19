@@ -110,4 +110,9 @@ export class BooklistsController {
     }
     return { ok: true };
   }
+
+  @Get('health')
+  health() {
+    return { status: 'ok', service: 'booklists', time: new Date().toISOString() };
+  }
 }

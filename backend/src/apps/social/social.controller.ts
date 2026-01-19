@@ -99,4 +99,9 @@ export class SocialController {
     }
     return updated;
   }
+
+  @Get('health')
+  health() {
+    return { status: 'ok', service: 'social', time: new Date().toISOString() };
+  }
 }
