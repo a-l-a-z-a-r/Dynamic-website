@@ -108,6 +108,12 @@ kind: Application
 metadata:
   name: socialbook-reviews
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=alazar111/socialbook-backend
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/backend.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/backend.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
@@ -129,6 +135,12 @@ kind: Application
 metadata:
   name: socialbook-users
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=alazar111/socialbook-backend
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/backend.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/backend.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
@@ -150,6 +162,12 @@ kind: Application
 metadata:
   name: socialbook-social
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=alazar111/socialbook-backend
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/backend.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/backend.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
@@ -171,6 +189,12 @@ kind: Application
 metadata:
   name: socialbook-booklists
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=alazar111/socialbook-backend
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/backend.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/backend.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
@@ -192,6 +216,12 @@ kind: Application
 metadata:
   name: socialbook-frontend
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: frontend=alazar111/socialbook-frontend
+    argocd-image-updater.argoproj.io/frontend.update-strategy: latest
+    argocd-image-updater.argoproj.io/frontend.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/frontend.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
@@ -213,6 +243,12 @@ kind: Application
 metadata:
   name: socialbook-notifications-worker
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: worker=alazar111/socialbook-notifications-worker
+    argocd-image-updater.argoproj.io/worker.update-strategy: latest
+    argocd-image-updater.argoproj.io/worker.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/worker.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
