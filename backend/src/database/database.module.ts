@@ -6,11 +6,15 @@ import { MongooseModule } from '@nestjs/mongoose';
   imports: [
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('MONGODB_URI') ?? 'mongodb://mongo:27017/socialbook',
-        dbName: config.get<string>('MONGODB_DB') ?? 'socialbook',
-        autoIndex: true,
-      }),
+      useFactory: (config: ConfigService) => {
+        const uri = config.get<string>('MONGODB_URI') ?? 'mongodb://mongo:27017/socialbook';
+        const dbName = config.get<string>('MONGODB_DB');
+        return {
+          uri,
+          ...(dbName ? { dbName } : {}),
+          autoIndex: true,
+        };
+      },
       inject: [ConfigService],
     }),
   ],
