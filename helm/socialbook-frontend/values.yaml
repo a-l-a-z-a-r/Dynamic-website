@@ -10,6 +10,9 @@ rolloutId: "frontend-90d6c3d"
 service:
   type: ClusterIP
   port: 80
+#d§efined in order to set environment variables in the frontend container
+
+
 
 env:
   VITE_API_BASE: /api
