@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: {{ .Chart.Name }}
+      annotations:
+        socialbook/rollout-id: "{{ .Values.rolloutId }}"
     spec:
       containers:
         - name: {{ .Chart.Name }}
