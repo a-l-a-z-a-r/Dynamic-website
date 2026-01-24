@@ -120,7 +120,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: alazar111/socialbook-frontend:frontend-cc6c35c
+          image: alazar111/socialbook-frontend:frontend-7ddfe74
           imagePullPolicy: Always
           ports:
             - containerPort: 80
