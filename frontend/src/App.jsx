@@ -55,7 +55,9 @@ const getTokenRoles = (token) => {
   const realmRoles = payload.realm_access?.roles || [];
   const clientRoles =
     payload.resource_access?.[keycloakConfig.clientId]?.roles || [];
-  return Array.from(new Set([...realmRoles, ...clientRoles]));
+  const realmManagementRoles =
+    payload.resource_access?.['realm-management']?.roles || [];
+  return Array.from(new Set([...realmRoles, ...clientRoles, ...realmManagementRoles]));
 };
 
 const getPathname = (value) => {
