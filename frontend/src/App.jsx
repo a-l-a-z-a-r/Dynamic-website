@@ -1071,6 +1071,7 @@ const App = () => {
       )
     : [];
   const isAdmin = getTokenRoles(getActiveToken()).some((role) => ADMIN_ROLES.includes(role));
+  const rootClassName = isAdmin ? 'admin-mode' : '';
   const adminBlocked = isAdminView && !isAdmin;
 
   const handleAdminChange = (event) => {
@@ -1122,7 +1123,7 @@ const App = () => {
   };
 
   return (
-    <>
+    <div className={rootClassName}>
       <canvas ref={canvasRef} className="mandelbrot-bg" aria-hidden="true" />
       <header className="topbar">
         <div className="brand">
@@ -2267,7 +2268,7 @@ const App = () => {
           </section>
         </main>
       )}
-    </>
+    </div>
   );
 };
 
