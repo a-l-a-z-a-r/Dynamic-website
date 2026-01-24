@@ -1301,6 +1301,148 @@ const App = () => {
             </section>
           )}
         </main>
+      ) : isAdminView ? (
+        <main className="admin-shell">
+          {adminBlocked ? (
+            <section className="panel stack">
+              <header className="panel-header">
+                <div>
+                  <p className="label">Admin</p>
+                  <h3>Access denied</h3>
+                </div>
+              </header>
+              <p className="empty-state">You need the admin role to view analytics.</p>
+            </section>
+          ) : (
+            <section className="admin-page">
+              <header className="admin-header">
+                <div>
+                  <p className="label">Admin</p>
+                  <h2>Socialbook Analytics</h2>
+                </div>
+                <div className="admin-actions">
+                  <button className="ghost" type="button" onClick={handleFindBooks}>
+                    Refresh snapshots
+                  </button>
+                  <button className="primary" type="button" onClick={() => navigate(DASHBOARD_PATH)}>
+                    Return to app
+                  </button>
+                </div>
+              </header>
+
+              <section className="admin-grid">
+                <article className="admin-card">
+                  <p className="meta">Weekly active readers</p>
+                  <h3>48.2k</h3>
+                  <p className="muted">+12.4% vs last week</p>
+                </article>
+                <article className="admin-card">
+                  <p className="meta">Retention (D7)</p>
+                  <h3>32.8%</h3>
+                  <p className="muted">Target 35%</p>
+                </article>
+                <article className="admin-card">
+                  <p className="meta">New stacks created</p>
+                  <h3>3,904</h3>
+                  <p className="muted">Top genre: Sci‑Fi</p>
+                </article>
+                <article className="admin-card">
+                  <p className="meta">Reviews posted</p>
+                  <h3>12,409</h3>
+                  <p className="muted">Avg rating 4.1</p>
+                </article>
+              </section>
+
+              <section className="admin-split">
+                <article className="panel admin-panel">
+                  <header className="panel-header">
+                    <div>
+                      <p className="label">Discovery</p>
+                      <h3>Feed engagement</h3>
+                    </div>
+                    <span className="meta">Last 24h</span>
+                  </header>
+                  <div className="admin-chart">
+                    <div className="chart-bar" style={{ height: '72%' }} />
+                    <div className="chart-bar" style={{ height: '46%' }} />
+                    <div className="chart-bar" style={{ height: '88%' }} />
+                    <div className="chart-bar" style={{ height: '61%' }} />
+                    <div className="chart-bar" style={{ height: '79%' }} />
+                    <div className="chart-bar" style={{ height: '54%' }} />
+                  </div>
+                  <p className="meta">Scroll depth and saves outperform likes by 1.6×.</p>
+                </article>
+                <article className="panel admin-panel">
+                  <header className="panel-header">
+                    <div>
+                      <p className="label">System</p>
+                      <h3>Service health</h3>
+                    </div>
+                    <span className="meta">Cluster snapshot</span>
+                  </header>
+                  <ul className="admin-list">
+                    <li>
+                      <span className="status-dot ok" aria-hidden="true" />
+                      Reviews API
+                      <span className="meta">p95 320ms</span>
+                    </li>
+                    <li>
+                      <span className="status-dot ok" aria-hidden="true" />
+                      Social API
+                      <span className="meta">p95 410ms</span>
+                    </li>
+                    <li>
+                      <span className="status-dot warn" aria-hidden="true" />
+                      Notifications Worker
+                      <span className="meta">Queue lag 2m</span>
+                    </li>
+                    <li>
+                      <span className="status-dot ok" aria-hidden="true" />
+                      Imports Worker
+                      <span className="meta">Idle</span>
+                    </li>
+                  </ul>
+                </article>
+              </section>
+
+              <section className="panel admin-panel">
+                <header className="panel-header">
+                  <div>
+                    <p className="label">Audience</p>
+                    <h3>Retention cohorts</h3>
+                  </div>
+                  <span className="meta">Last 6 weeks</span>
+                </header>
+                <div className="admin-cohorts">
+                  <div className="cohort-row">
+                    <span className="meta">Week 1</span>
+                    <div className="cohort-bars">
+                      <span style={{ width: '78%' }} />
+                      <span style={{ width: '52%' }} />
+                      <span style={{ width: '31%' }} />
+                    </div>
+                  </div>
+                  <div className="cohort-row">
+                    <span className="meta">Week 2</span>
+                    <div className="cohort-bars">
+                      <span style={{ width: '72%' }} />
+                      <span style={{ width: '49%' }} />
+                      <span style={{ width: '28%' }} />
+                    </div>
+                  </div>
+                  <div className="cohort-row">
+                    <span className="meta">Week 3</span>
+                    <div className="cohort-bars">
+                      <span style={{ width: '69%' }} />
+                      <span style={{ width: '44%' }} />
+                      <span style={{ width: '25%' }} />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </section>
+          )}
+        </main>
       ) : (
         <main className="app-shell">
           <aside className="sidebar">
@@ -1447,68 +1589,7 @@ const App = () => {
               </div>
             </header>
 
-            {adminBlocked ? (
-              <section className="panel stack">
-                <header className="panel-header">
-                  <div>
-                    <p className="label">Admin</p>
-                    <h3>Access denied</h3>
-                  </div>
-                </header>
-                <p className="empty-state">You need the admin role to manage users.</p>
-              </section>
-            ) : isAdminView ? (
-              <section className="panel stack">
-                <header className="panel-header">
-                  <div>
-                    <p className="label">Admin</p>
-                    <h3>User management</h3>
-                  </div>
-                </header>
-                <div className="panel">
-                  <form className="form vertical" onSubmit={(event) => event.preventDefault()}>
-                    <label className="field">
-                      <span className="meta">Username</span>
-                      <input
-                        name="username"
-                        value={adminForm.username}
-                        onChange={handleAdminChange}
-                        placeholder="Username in Keycloak"
-                      />
-                    </label>
-                    <label className="field inline">
-                      <input
-                        type="checkbox"
-                        name="enabled"
-                        checked={adminForm.enabled}
-                        onChange={handleAdminChange}
-                      />
-                      <span className="meta">Enabled</span>
-                    </label>
-                    {adminState.error && <p className="empty-state">{adminState.error}</p>}
-                    {adminState.success && <p className="empty-state">{adminState.success}</p>}
-                    <div className="actions">
-                      <button
-                        className="primary"
-                        type="button"
-                        onClick={() => submitAdminAction('enable')}
-                        disabled={adminState.loading}
-                      >
-                        {adminState.loading ? 'Saving...' : 'Update status'}
-                      </button>
-                      <button
-                        className="ghost danger"
-                        type="button"
-                        onClick={() => submitAdminAction('delete')}
-                        disabled={adminState.loading}
-                      >
-                        Delete user
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </section>
-            ) : isNotificationsView ? (
+            {isNotificationsView ? (
               <section className="panel stack">
                 <header className="panel-header">
                   <div>
