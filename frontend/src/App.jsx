@@ -1126,6 +1126,7 @@ const App = () => {
         <div className="brand">
           <span className="logo-book" aria-hidden="true" />
           <span className="wordmark">Socialbook</span>
+          {isAdmin && <span className="admin-badge" aria-label="Admin">Admin</span>}
         </div>
         <div className="nav">
           <span className={`badge ${authState.authenticated ? 'success' : ''}`}>{statusLabel}</span>
