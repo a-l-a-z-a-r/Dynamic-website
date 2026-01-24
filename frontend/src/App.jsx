@@ -53,11 +53,11 @@ const getTokenRoles = (token) => {
   const payload = decodeTokenPayload(token);
   if (!payload) return [];
   const realmRoles = payload.realm_access?.roles || [];
-  const clientRoles =
-    payload.resource_access?.[keycloakConfig.clientId]?.roles || [];
-  const realmManagementRoles =
-    payload.resource_access?.['realm-management']?.roles || [];
-  return Array.from(new Set([...realmRoles, ...clientRoles, ...realmManagementRoles]));
+  const resourceAccess = payload.resource_access || {};
+  const resourceRoles = Object.values(resourceAccess).flatMap(
+    (entry) => entry?.roles || [],
+  );
+  return Array.from(new Set([...realmRoles, ...resourceRoles]));
 };
 
 const getPathname = (value) => {
