@@ -3,7 +3,7 @@ import { getKeycloak } from './keycloak';
 import { hasKeycloakConfig, keycloakConfig } from './keycloak-config';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-const ADMIN_ROLE = 'admin';
+const ADMIN_ROLES = ['realm-admin', 'real-admin', 'admin'];
 const apiUrl = (path) => {
   const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
   return `${base}${path}`;
@@ -1068,7 +1068,7 @@ const App = () => {
         ),
       )
     : [];
-  const isAdmin = Boolean(getTokenRoles(getActiveToken()).includes(ADMIN_ROLE));
+  const isAdmin = getTokenRoles(getActiveToken()).some((role) => ADMIN_ROLES.includes(role));
   const adminBlocked = isAdminView && !isAdmin;
 
   const handleAdminChange = (event) => {
