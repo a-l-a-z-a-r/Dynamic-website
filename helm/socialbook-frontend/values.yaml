@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: alazar111/socialbook-frontend
-  tag: latest
+  tag: frontend-cc6c35c
   pullPolicy: Always
 
 service:
