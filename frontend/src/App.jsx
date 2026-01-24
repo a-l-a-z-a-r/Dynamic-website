@@ -185,8 +185,6 @@ const App = () => {
   const [replyState, setReplyState] = useState({ loading: false, error: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItems, setExpandedItems] = useState(() => new Set());
-  const [adminForm, setAdminForm] = useState({ username: '', enabled: true });
-  const [adminState, setAdminState] = useState({ loading: false, error: '', success: '' });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1072,55 +1070,6 @@ const App = () => {
     : [];
   const isAdmin = getTokenRoles(getActiveToken()).some((role) => ADMIN_ROLES.includes(role));
   const rootClassName = isAdmin ? 'admin-mode' : '';
-  const adminBlocked = isAdminView && !isAdmin;
-
-  const handleAdminChange = (event) => {
-    const { name, value, type, checked } = event.target;
-    setAdminForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const submitAdminAction = async (action) => {
-    const token = getActiveToken();
-    if (!token) {
-      setAdminState({ loading: false, error: 'Missing access token.', success: '' });
-      return;
-    }
-    if (!adminForm.username.trim()) {
-      setAdminState({ loading: false, error: 'Username is required.', success: '' });
-      return;
-    }
-
-    setAdminState({ loading: true, error: '', success: '' });
-    try {
-      if (action === 'enable') {
-        await authFetch(`/admin/users/${encodeURIComponent(adminForm.username)}/enabled`, token, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled: Boolean(adminForm.enabled) }),
-        });
-        setAdminState({
-          loading: false,
-          error: '',
-          success: `Updated ${adminForm.username}.`,
-        });
-      }
-      if (action === 'delete') {
-        await authFetch(`/admin/users/${encodeURIComponent(adminForm.username)}`, token, {
-          method: 'DELETE',
-        });
-        setAdminState({
-          loading: false,
-          error: '',
-          success: `Deleted ${adminForm.username}.`,
-        });
-      }
-    } catch (err) {
-      setAdminState({ loading: false, error: err.message || 'Admin action failed.', success: '' });
-    }
-  };
 
   return (
     <div className={rootClassName}>
